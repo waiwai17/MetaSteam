@@ -886,21 +886,25 @@ def cmd_init(cfg_path, rest):
         print("[INFO] 配置已存在：{}（如需重来请先删除它）".format(cfg_path), flush=True)
     else:
         res = create_project_from_template(name, target)
-        project = res["project"]
-        inbox = res.get("inbox") or ""
-        out = res.get("fbx_output") or ""
-        cfg = dict(CONFIG_DEFAULT)
-        cfg.update({
-            "instance": name,
-            "ue_editor": editor,
-            "project": project.replace("\\", "/"),
-            "inbox": str(inbox).replace("\\", "/"),
-            "fbx_output": str(out).replace("\\", "/"),
-            "import_root": "/Game/CaptureManager/Auto" + name,
-            "identity_import_root": "/Game/CaptureManager/ID",
-        })
+        # 以工程自带的 config 为准（create_project_from_template 已算好
+        # inbox/out/import_root 并建好目录）；这里只补"本机特有"的编辑器路径。
+        # 教训：曾在这里自己拼 inbox/out —— 返回字典里没有这两个键 → 写进配置的是空串，
+        # 表现为"启动后热文件夹不存在、什么都没发生"，且 doctor 未必报错。
+        gen_cfg = res.get("config", "")
+        if gen_cfg and os.path.isfile(gen_cfg):
+            cfg = load_config(gen_cfg)[0]
+        else:
+            cfg = dict(CONFIG_DEFAULT)
+            cfg["instance"] = name
+            cfg["project"] = res["project"].replace("\\", "/")
+        cfg["ue_editor"] = editor
         write_json_atomic(cfg_path, cfg)
         print("[OK] 已初始化：{}".format(cfg_path), flush=True)
+
+    # 兜底自检：关键路径不能是空的（空 = 启动后什么都不发生，极难排查）
+    for key in ("ue_editor", "project", "inbox", "fbx_output"):
+        if not str(cfg.get(key, "")).strip():
+            print("[WARN] 配置里 {} 为空，请手动补齐：{}".format(key, cfg_path), flush=True)
 
     print("[INFO] 编辑器: {}".format(cfg.get("ue_editor", "")), flush=True)
     print("[INFO] 工程  : {}".format(cfg.get("project", "")), flush=True)

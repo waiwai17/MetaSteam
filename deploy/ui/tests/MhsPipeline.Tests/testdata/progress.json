@@ -1,0 +1,16 @@
+{
+  "asset_name": "emotion__surprised__high_readable__hr_sur_008_001",
+  "state": "success",
+  "stage": "export_fbx",
+  "pass": 3,
+  "pass_count": 3,
+  "current_frame": 2654,
+  "total_frames": 2656,
+  "percent": 100.0,
+  "elapsed_seconds": 1082,
+  "eta_seconds": 0,
+  "batch_index": 0,
+  "batch_total": 0,
+  "batch_eta_seconds": -1,
+  "updated_at": "2026-09-23 12:42:08"
+}

@@ -1,0 +1,12 @@
+{
+  "instance": "default",
+  "ue_editor": "D:/UE_5.7/Engine/Binaries/Win64/UnrealEditor.exe",
+  "project": "F:/CFH/CFH/20260709/MH_H/MH_H.uproject",
+  "inbox": "E:/Work/Mobu_maya/MetaSol/spike/accept6_inbox",
+  "fbx_output": "E:/Work/Mobu_maya/MetaSol/spike/accept6_out",
+  "identity_import_root": "/Game/CaptureManager/ID4",
+  "import_root": "/Game/CaptureManager/Auto6",
+  "bindings_file": "",
+  "web_port": 8902,
+  "bootstrap": ""
+}

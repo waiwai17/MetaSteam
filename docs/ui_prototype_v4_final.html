@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stream 三控制台 · 最终方案原型 v4</title>
+<style>
+  :root{
+    --bg:#0b0c0e; --term:#000; --line:#1f2226;
+    --fg:#c8ccd0; --dim:#5f666e; --blue:#4a9eff; --green:#3ddc84;
+    --amber:#f0b429; --red:#ff5f56; --white:#e8ebee;
+    --slate:#1e2024; --slate2:#242629; --slate3:#2a2c31; --slateline:#383b41;
+    --slatetext:#dcdfe3; --slatedim:#8f939a; --slateblue:#2461b8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);padding:20px 22px;font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:var(--fg)}
+  h1{font-size:15px;color:var(--white);font-weight:600}
+  .sub{font-size:10px;color:var(--dim);margin:3px 0 6px}
+  .legend{font-size:10px;color:var(--dim);margin-bottom:14px;line-height:1.7}
+  .legend b{color:var(--white)}
+  .legend .del{color:var(--red);text-decoration:line-through}
+  .wrap{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:392px}
+  .col.wide{width:452px}
+  .cap{font-size:10px;color:var(--dim);margin-bottom:5px;letter-spacing:.4px}
+  .cap b{color:var(--blue)}
+  .note{font-size:10px;color:var(--dim);margin-top:7px;line-height:1.65}
+  .note b{color:var(--white)}
+
+  /* CLI 终端 */
+  .term{background:var(--term);border:1px solid var(--line);border-radius:4px;overflow:hidden;
+        font-family:Consolas,"Cascadia Mono",monospace;font-size:11px;line-height:1.55}
+  .term .bar{background:#15171a;padding:5px 9px;font-size:10px;color:var(--dim);
+             display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+  .term .bar .t{color:var(--fg)}
+  .term .bar .r{margin-left:auto;font-size:9px}
+  .term .body{padding:8px 10px;white-space:pre}
+  .c-dim{color:var(--dim)} .c-blue{color:var(--blue)} .c-green{color:var(--green)}
+  .c-amber{color:var(--amber)} .c-red{color:var(--red)} .c-white{color:var(--white)}
+  .term .foot{border-top:1px solid var(--line);padding:4px 9px;font-size:9px;color:var(--dim);display:flex;gap:8px}
+  .term .foot .r{margin-left:auto}
+
+  /* Slate 面板 */
+  .pane{background:var(--slate);border:1px solid var(--slateline);border-radius:6px;overflow:hidden}
+  .pane.top{border-top:3px solid var(--slateblue)}
+  .phd{padding:7px 11px;background:var(--slate3);font-size:11px;font-weight:600;color:var(--slatetext);display:flex;align-items:center}
+  .phd .tag{margin-left:auto;font-size:9px;color:var(--slatedim);font-weight:400}
+  .pbd{padding:11px}
+  .steps{display:flex;gap:6px;margin-bottom:8px}
+  .step{flex:1;background:var(--slate2);border:1px solid var(--slateline);border-radius:5px;padding:7px 5px;text-align:center}
+  .step .n{font-size:9px;color:var(--slatedim)}
+  .step .t{font-size:11px;font-weight:600;margin-top:2px;color:var(--slatetext)}
+  .step.done{border-color:rgba(61,220,132,.45)} .step.done .t{color:var(--green)}
+  .step.cur{border-color:var(--slateblue);background:rgba(36,97,184,.14)} .step.cur .t{color:#6aa6ff}
+  .next{font-size:10px;color:#9cc4ff;background:rgba(36,97,184,.12);border-left:2px solid var(--slateblue);
+        padding:5px 8px;border-radius:0 3px 3px 0;margin-bottom:10px}
+  .mod{border:1px solid var(--slateline);border-radius:5px;margin-bottom:8px;overflow:hidden}
+  .mod > .h{background:var(--slate3);padding:4px 9px;font-size:10px;font-weight:600;color:var(--slatetext);display:flex;align-items:center}
+  .mod > .h .r{margin-left:auto;font-size:9px;color:var(--slatedim);font-weight:400}
+  .mod > .b{padding:9px}
+  .row{display:flex;align-items:center;gap:7px;font-size:10px;padding:2px 0}
+  .row .k{width:62px;color:var(--slatedim);flex:none}
+  .row .v{flex:1;background:#131417;border:1px solid var(--slateline);border-radius:3px;padding:3px 6px;
+          font-size:10px;font-family:Consolas,monospace;color:var(--slatetext)}
+  .btn{background:var(--slate3);border:1px solid var(--slateline);color:var(--slatetext);font-size:10px;padding:3px 9px;border-radius:3px}
+  .btn.pri{background:var(--slateblue);border-color:var(--slateblue);color:#fff;font-weight:600}
+  .btn.sm{padding:2px 7px;font-size:9px}
+  .mod .b > .tail{margin-top:7px;text-align:right}
+  .kv{font-size:10px;color:var(--slatedim);line-height:1.75}
+  .kv b{color:var(--slatetext);font-weight:600}
+  .stline{display:flex;align-items:center;gap:6px;font-size:10px;margin:6px 0}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--slatedim);flex:none}
+  .dot.run{background:var(--slateblue)}
+  .idst{font-size:10px;color:var(--amber);background:rgba(240,180,41,.1);border-left:2px solid var(--amber);
+        padding:4px 7px;border-radius:0 3px 3px 0;margin-bottom:7px}
+  .ops{display:flex;gap:6px;margin-top:6px}
+</style>
+</head>
+<body>
+<h1>Stream 三控制台 · 最终方案原型 v4</h1>
+<div class="sub">2026-09-20 · 待确认后实施</div>
+<div class="legend">
+载体：<b>① UE 面板（Slate GUI · 会冻结）</b> · <b>② 单任务 CLI（UE 控制台 · 独立线程）</b> · <b>③ 全局控制台 CLI（UE 控制台 · 独立线程 · 常驻）</b> · ④ Web（附加，同 ③ 口径）<br>
+面板已删除：<span class="del">大数字（今日交付/已同步）</span> · <span class="del">兜底段间更新文案</span> · <span class="del">四步卡</span> · <span class="del">当前任务行</span> · <span class="del">异常行</span> · <span class="del">事件面板</span>
+</div>
+
+<div class="wrap">
+
+  <!-- ① UE 面板 -->
+  <div class="col">
+    <div class="cap">① <b>UE 面板</b> · Stream Tab — 配置 / 启动 / 身份 / 兜底</div>
+    <div class="pane top">
+      <div class="phd">MetaHuman 解算工具 · Stream <span class="tag">UE 内 · 会冻结</span></div>
+      <div class="pbd">
+
+        <div class="steps">
+          <div class="step done"><div class="n">①</div><div class="t">配置</div></div>
+          <div class="step cur"><div class="n">②</div><div class="t">身份</div></div>
+          <div class="step"><div class="n">③</div><div class="t">监听</div></div>
+        </div>
+        <div class="mod">
+          <div class="h">配置 <span class="r">E:\Capture\inbox</span></div>
+          <div class="b">
+            <div class="row"><span class="k">加载路径</span><span class="v">E:\Capture\inbox</span><span class="btn sm">浏览</span></div>
+            <div class="row"><span class="k">身份导入</span><span class="v">/Game/CaptureManager/ID</span><span class="btn sm">浏览</span></div>
+            <div class="row"><span class="k">素材导入</span><span class="v">/Game/CaptureManager/Auto</span><span class="btn sm">浏览</span></div>
+            <div class="row"><span class="k">导出路径</span><span class="v">E:\OUT\auto_fbx</span><span class="btn sm">浏览</span></div>
+            <div class="tail"><span class="btn sm">保存为默认</span></div>
+          </div>
+        </div>
+
+        <div class="mod">
+          <div class="h">状态 <span class="r">不含任何计数</span></div>
+          <div class="b">
+            <div class="stline"><span class="dot"></span>未启动</div>
+            <div class="ops" style="justify-content:flex-end"><span class="btn sm">预检</span><span class="btn sm pri">启动监听</span></div>
+          </div>
+        </div>
+
+        <div class="mod">
+          <div class="h">身份 <span class="r">Semi 流程</span></div>
+          <div class="b">
+            <div class="row"><span class="k">身份资产目录</span><span class="v">/Game/ID</span><span class="btn sm">浏览</span></div>
+            <div class="idst">ID 状态：已导入 · 待制作身份（0818_face_rom_pm_002）</div>
+            <div class="ops">
+              <span class="btn sm">导入项目</span><span class="btn sm">打开编辑器</span><span class="btn sm pri">确认完成</span>
+            </div>
+            <div class="kv" style="margin-top:8px">
+              身份分组<br>
+              <b>am/</b> → ID_am<br>
+              <b>pm/</b> → 未绑定
+            </div>
+          </div>
+        </div>
+
+        <div class="mod">
+          <div class="h">日志 <span class="r">兜底查阅</span></div>
+          <div class="b" style="font-family:Consolas,monospace;font-size:9px;color:var(--slatedim);line-height:1.6">
+            15:42 [MHS_LOG] ID 素材就绪: 0818_face_rom_pm_002<br>
+            15:41 [MHS_LOG] Stream 配置已保存为默认<br>
+            15:40 [MHS_LOG] Stream 监听启动
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="note">① 只做<b>配置/启动/身份确认/兜底</b>。所有计数与进度 → ③。</div>
+  </div>
+
+  <!-- ② 单任务 -->
+  <div class="col">
+    <div class="cap">② <b>单任务进度</b> · CLI 面板（UE 控制台 · 500ms）</div>
+    <div class="term">
+      <div class="bar"><span class="t">单任务进度</span><span class="r">表演 · 解算中</span></div>
+      <div class="body"><span class="c-white">&gt; </span><span class="c-white">Anims_ep029</span> <span class="c-blue">解算中</span>
+<span class="c-dim">[</span><span class="c-blue">############--------</span><span class="c-dim">]</span> <span class="c-white">62%</span>
+
+<span class="c-dim">Pass</span> 2/3   <span class="c-dim">帧</span> 1517/2351
+<span class="c-dim">已跑</span> 12m04s  <span class="c-dim">剩余约</span> 7m20s
+<span class="c-dim">阶段</span> 导入 ✓ · 解算 ⏵ · 导出 …
+</div>
+      <div class="foot"><span>progress.json</span><span class="r">心跳线程</span></div>
+    </div>
+
+    <div class="term" style="margin-top:10px">
+      <div class="bar"><span class="t">单任务进度</span><span class="r">身份导入</span></div>
+      <div class="body"><span class="c-white">&gt; </span><span class="c-amber">[ID]</span> <span class="c-white">0818_face_rom_pm_002</span> <span class="c-blue">导入中</span>
+<span class="c-dim">[</span><span class="c-blue">######--------------</span><span class="c-dim">]</span> <span class="c-white">32%</span>
+
+<span class="c-dim">阶段</span> 导入 ⏵ <span class="c-dim">（身份素材不解算/不导出）</span>
+</div>
+      <div class="foot"><span>progress.json</span><span class="r">心跳线程</span></div>
+    </div>
+    <div class="note">身份导入时任务名带 <b style="font-family:Consolas">[ID]</b> 前缀 —— 一眼区分在做身份还是跑表演。</div>
+  </div>
+
+  <!-- ③ 全局控制台 -->
+  <div class="col wide">
+    <div class="cap">③ <b>全局进度控制台</b> · CLI 面板（UE 控制台 · 1s · 常驻）</div>
+    <div class="term">
+      <div class="bar"><span class="t">Stream 全局控制台</span><span class="r">1s · 置顶</span></div>
+      <div class="body"><span class="c-dim">$</span> stream --watch <span class="c-white">E:\Capture\inbox</span>
+
+<span class="c-dim">── 身份 ──────────────────────────────────────</span>
+<span class="c-dim">[15:42:07]</span> <span class="c-amber">ⓘ</span> pm/ <span class="c-dim">→</span> <span class="c-white">ID_pm</span>  <span class="c-dim">· ID素材</span> 已导入·待制作身份
+
+<span class="c-dim">[15:42:07]</span> <span class="c-blue">●</span> 运行中  <span class="c-dim">队列</span> 12  <span class="c-dim">交付</span> <span class="c-green">8</span>  <span class="c-dim">失败</span> 0
+<span class="c-dim">[15:42:07]</span> <span class="c-dim">预计追平</span> <span class="c-blue">18:20</span> <span class="c-dim">(2h38m · k=0.55s/帧)</span>
+
+<span class="c-dim">── 加载中 ────────────────────────────────────</span>
+<span class="c-dim">[09:15]</span> <span class="c-amber">⏳</span> pm/Anims_ep031  加载中（等待就绪）
+<span class="c-dim">[09:12]</span> <span class="c-amber">⏳</span> pm/Anims_ep030  已加载 · 待解算
+
+<span class="c-dim">── 处理中 ────────────────────────────────────</span>
+<span class="c-dim">[09:02]</span> <span class="c-blue">⏵</span> pm/Anims_ep029  解算  <span class="c-dim">[</span><span class="c-blue">############--------</span><span class="c-dim">]</span> 62%  12m04s/19m24s
+
+<span class="c-dim">── 已完成（仅表演交付）────────────────────────</span>
+<span class="c-dim">[08:47]</span> <span class="c-green">✓</span> am/Anims_ep002  33min  <span class="c-dim">→</span> Anims_ep002.fbx
+<span class="c-dim">[08:12]</span> <span class="c-green">✓</span> am/Anims_ep001  34min  <span class="c-dim">→</span> Anims_ep001.fbx
+<span class="c-dim">… 另有 6 条 · 双击行打开 FBX 文件夹</span>
+</div>
+      <div class="foot"><span>stream_state.json</span><span>加载 2 · 处理 1 · 完成 8</span><span class="r">1s</span></div>
+    </div>
+    <div class="note">
+      <b>身份带置顶</b>：身份是全局前置条件（不是任务），放三列之外；ID 不进"已完成"（它不是交付物）。<br>
+      三列：加载中 / 处理中 / 已完成（FBX 真实落盘为准）；追平预估 = 帧数 × 在线标定 k。
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

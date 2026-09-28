@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>自绘 UI · 原型 v6（配置面板 + 实时部分）</title>
+<style>
+  :root{--bg:#0b0c0e;--app:#141619;--line:#23262b;--fg:#c8ccd0;--dim:#5f666e;--blue:#4a9eff;
+    --green:#3ddc84;--amber:#f0b429;--red:#ff5f56;--white:#e8ebee;--mod:#1a1d21;--modh:#22262b;
+    --inp:#0f1114;--btn:#262a30;--slb:#2461b8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);padding:18px;font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:var(--fg)}
+  h1{font-size:15px;color:var(--white)}
+  .sub{font-size:10px;color:var(--dim);margin:3px 0 6px}
+  .lg{font-size:10px;color:var(--dim);margin-bottom:14px;line-height:1.75;border-left:2px solid var(--slb);padding-left:9px}
+  .lg b{color:var(--white)}
+  .k{display:inline-block;background:#15171a;border:1px solid var(--line);border-radius:3px;padding:0 5px;font-family:Consolas,monospace;color:var(--white);font-size:10px}
+
+  /* 应用窗口外壳（模拟自绘 UI：独立进程，非 UE 主线程） */
+  .app{background:var(--app);border:1px solid var(--line);border-radius:8px;overflow:hidden;max-width:1000px}
+  .title{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#101215;border-bottom:1px solid var(--line);font-size:11px}
+  .title .n{color:var(--white);font-weight:600}
+  .title .inst{color:var(--dim);font-size:10px}
+  .title .r{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:10px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+  .dot.amber{background:var(--amber)} .dot.red{background:var(--red)} .dot.dim{background:var(--dim)}
+  .wbtn{width:11px;height:11px;border-radius:50%;background:#33363b;display:inline-block}
+
+  .body{display:flex;gap:0;align-items:flex-start}
+  .col{padding:11px}
+  .col.left{width:352px;border-right:1px solid var(--line)}
+  .col.right{flex:1;min-width:0}
+
+  .cap{font-size:9px;color:var(--dim);letter-spacing:.5px;margin:0 0 6px}
+  .cap b{color:var(--blue)}
+  .mod{background:var(--mod);border:1px solid var(--line);border-radius:6px;margin-bottom:9px;overflow:hidden}
+  .mod>.h{background:var(--modh);padding:5px 9px;font-size:10px;font-weight:600;color:var(--white);display:flex;align-items:center}
+  .mod>.h .r{margin-left:auto;font-size:9px;color:var(--dim);font-weight:400}
+  .mod>.b{padding:9px}
+  .row{display:flex;align-items:center;gap:6px;font-size:10px;padding:3px 0}
+  .row .kk{width:66px;color:var(--dim);flex:none}
+  .row .v{flex:1;background:var(--inp);border:1px solid var(--line);border-radius:3px;padding:3px 6px;
+    font-family:Consolas,monospace;font-size:10px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .btn{background:var(--btn);border:1px solid var(--line);color:var(--fg);font-size:10px;padding:3px 9px;border-radius:3px}
+  .btn.pri{background:var(--slb);border-color:var(--slb);color:#fff;font-weight:600}
+  .btn.sm{padding:2px 7px;font-size:9px}
+  .btn.on{background:rgba(74,158,255,.16);border-color:var(--blue);color:#8fc0ff}
+  .ops{display:flex;gap:6px;margin-top:8px}
+  .i{opacity:.65;font-size:9px}          /* ⓘ = 悬浮说明入口（说明不常驻界面） */
+  .kv{font-size:10px;color:var(--dim);line-height:1.7} .kv b{color:var(--fg)}
+  .warn{font-size:9px;color:var(--amber);background:rgba(240,180,41,.09);border-left:2px solid var(--amber);padding:4px 7px;margin-top:7px}
+
+  /* 实时部分 */
+  .status{display:flex;align-items:center;gap:10px;font-size:11px;background:#101215;border:1px solid var(--line);
+    border-radius:6px;padding:7px 10px;margin-bottom:9px}
+  .status .sp{margin-left:auto;font-size:9px;color:var(--dim)}
+  .idband{display:flex;align-items:center;gap:7px;font-size:10px;background:var(--mod);border:1px solid var(--line);
+    border-radius:6px;padding:6px 9px;margin-bottom:9px}
+  .idband .ar{color:var(--dim)} .idband .id{color:var(--white)} .idband .src{margin-left:auto;color:var(--dim);font-size:9px}
+  .prog{background:var(--mod);border:1px solid rgba(36,97,184,.5);border-radius:6px;padding:9px;margin-bottom:9px}
+  .prog .t{font-size:10px;color:var(--white);display:flex;align-items:center;gap:7px}
+  .prog .t .st{color:var(--blue);font-size:9px}
+  .bar{height:9px;background:#0e1013;border:1px solid var(--line);border-radius:5px;margin:7px 0 5px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#2461b8,#4a9eff)}
+  .prog .m{font-size:9px;color:var(--dim);font-family:Consolas,monospace}
+  .prog .note{font-size:9px;color:var(--dim);margin-top:5px}
+  .sec{background:var(--mod);border:1px solid var(--line);border-radius:6px;margin-bottom:8px;overflow:hidden}
+  .sec>.h{background:var(--modh);padding:4px 9px;font-size:10px;color:var(--white);display:flex;align-items:center}
+  .sec>.h .c{margin-left:auto;font-size:9px;color:var(--dim)}
+  .sec>.b{padding:7px 9px;font-size:10px;font-family:Consolas,monospace;line-height:1.65}
+  .g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)} .b{color:var(--blue)} .d{color:var(--dim)} .w{color:var(--white)}
+  .empty{color:var(--dim);font-size:10px;padding:6px 9px}
+  .filters{display:flex;gap:5px;padding:6px 9px;border-bottom:1px solid var(--line);font-size:9px}
+  .foot{display:flex;gap:10px;align-items:center;padding:5px 11px;background:#101215;border-top:1px solid var(--line);font-size:9px;color:var(--dim)}
+  .foot .r{margin-left:auto}
+  .note{font-size:9px;color:var(--dim);margin-top:7px;line-height:1.65} .note b{color:var(--white)}
+  .tray{display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:10px}
+  .tray .menu{background:var(--app);border:1px solid var(--line);border-radius:6px;padding:6px 8px;line-height:1.8;font-size:10px}
+  .degrade{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+  .dg{background:var(--mod);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:10px;min-width:290px}
+  .dg .t{font-size:9px;color:var(--dim);margin-bottom:3px}
+</style>
+</head>
+<body>
+<h1>自绘 UI · 原型 v6（配置面板 + 实时部分）</h1>
+<div class="sub">2026-09-22 · 技术栈 C# WPF/WinUI · 独立进程（非 UE 主线程） · 施工蓝图</div>
+<div class="lg">
+载体：<b>独立 C# 进程</b>，数据源 100% 是文件（<span class="k">stream_state.json</span> + <span class="k">queue_state.json</span> + <span class="k">progress.json</span>），
+<b>不调用引擎 API、不等待引擎响应</b> → UE 解算阻塞 34 分钟期间，本窗口<b>照常 1s 刷新、可点可切</b>（根治 V5 面板冻结）。<br>
+两模块：<b>① 配置面板</b>（可写：路径/身份绑定 + 引擎进程控制）｜<b>② 实时部分</b>（只读：状态/进度/列表/事件）。<br>
+引擎三态：<b>运行中 / 暂停中（完成当前条后退出）/ 已暂停</b>；<b>继续 = 再次启动</b>（队列保留，done 不重跑）。
+暂停 = 写 <span class="k">stop.flag</span> + <span class="k">stop.intent</span> → <b>不重启</b>；
+崩溃（无 intent）→ watchdog <b>自动重启续跑</b>——两者靠 intent 区分。<br>
+与 V5 的关系：V5 的「UE Slate 面板 + conhost 控制台」<b>合并为单一自绘窗口</b>；conhost 的鼠标限制消失 →
+<span class="k">T</span>/<span class="k">O</span> 快捷键降级取消，恢复鼠标点击（打开输出目录 = 点按钮）。<br>
+<b>工程来源</b>：GUI <b>从内置模板工程新建</b>（复制目录，不含现场编译）→ 用户无需手选 .uproject；
+模板内含插件（预编译）、MetaHuman 骨架、目录约定（`_id/` · `{组}/`）、空绑定表。
+状态 JSON 与资产<b>都随工程走</b>，切换工程 = 切换整套状态。<br>
+<b>文案纪律（重要）</b>：界面上只留<b>状态</b>与<b>动作</b>；原理/语义一律收进 <span class="k">ⓘ</span> 悬浮提示，<b>不常驻</b>——
+解释越多理解成本越高、越显复杂。
+</div>
+
+<div class="app">
+  <div class="title">
+    <span class="wbtn"></span><span class="wbtn"></span><span class="wbtn"></span>
+    <span class="n">mhs_pipeline · 流式解算监控</span>
+    <span class="inst">实例 am_pm_line01</span>
+    <span class="r"><span class="dot"></span>引擎运行中 · PID 48592 · 2h14m · Web 8902</span>
+  </div>
+
+  <div class="body">
+    <!-- ① 配置面板 -->
+    <div class="col left">
+      <div class="cap">① <b>配置面板</b> · 可写（配置/绑定）+ 进程控制</div>
+
+      <div class="mod">
+        <div class="h">工程 <span class="r">状态与资产随工程走</span></div>
+        <div class="b">
+          <div class="row">
+            <span class="kk">当前工程</span>
+            <span class="v">MH_Line01.uproject</span>
+            <span class="btn sm pri">新建 <span class="i">ⓘ</span></span>
+          </div>
+          <div class="row">
+            <span class="kk">模板</span>
+            <span class="v">MH_Template <span class="i">ⓘ</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mod">
+        <div class="h">引擎控制 <span class="r">调 launcher CLI</span></div>
+        <div class="b">
+          <!-- 状态行在按钮上方（三态，只显示其一）-->
+          <div class="row"><span class="dot"></span><span class="kv">运行中 · 队列 8 · 交付 12 · 失败 1</span></div>
+          <div class="row"><span class="dot amber"></span><span class="kv">暂停中 · 完成当前条后退出 · 剩余约 12 分钟</span></div>
+          <div class="row"><span class="dot dim"></span><span class="kv">已暂停 · 队列保留 5 条</span></div>
+
+          <div class="ops">
+            <span class="btn sm">启动 / 继续</span>
+            <span class="btn sm pri">暂停 <span class="i">ⓘ</span></span>
+            <span class="btn sm">强制结束 ▾</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mod">
+        <div class="h">路径 <span class="r">pipeline.config.json</span></div>
+        <div class="b">
+          <div class="row"><span class="kk">加载路径</span><span class="v">E:\...\accept6_inbox</span><span class="btn sm">浏览</span></div>
+          <div class="row"><span class="kk">身份导入</span><span class="v">/Game/CaptureManager/ID4</span><span class="btn sm">浏览</span></div>
+          <div class="row"><span class="kk">素材导入</span><span class="v">/Game/CaptureManager/Auto6</span><span class="btn sm">浏览</span></div>
+          <div class="row"><span class="kk">导出路径</span><span class="v">E:\...\accept6_out</span><span class="btn sm">浏览</span></div>
+          <div class="ops" style="justify-content:flex-end"><span class="btn sm">保存为默认</span><span class="btn sm">打开输出目录</span></div>
+        </div>
+      </div>
+
+      <div class="mod">
+        <div class="h">身份与绑定 <span class="r">stream_bindings.json</span></div>
+        <div class="b">
+          <div class="row"><span class="kk">资产目录</span><span class="v">/Game/ID</span><span class="btn sm">浏览</span></div>
+          <div class="row"><span class="kk">身份资产</span><span class="v">/Game/ID/ID_pm</span><span class="btn sm">检测</span></div>
+          <div class="row"><span class="kk">绑定目标</span><span class="v">pm ▾</span><span class="btn sm">刷新候选</span></div>
+          <div class="ops"><span class="btn sm pri">确认绑定</span><span class="btn sm">清除绑定</span></div>
+          <div class="kv" style="margin-top:8px">身份分组矩阵<br>
+            <b>am/</b> → ID_am · 3/3 完成<br>
+            <b>pm/</b> → ID_pm · 1/3 · 待绑定 1</div>
+          <div class="warn">身份资产框显式指定（[检测] 只取目录内最新）；绑根组会提示“全局兜底”</div>
+        </div>
+      </div>
+
+      <div class="mod">
+        <div class="h">实例 <span class="r">多实例预留</span></div>
+        <div class="b">
+          <div class="row"><span class="kk">实例名</span><span class="v">am_pm_line01</span></div>
+          <div class="row"><span class="kk">Web 端口</span><span class="v">8902</span></div>
+        </div>
+      </div>
+
+      <div class="note"><b>纪律</b>：配置面板只写「配置 + 绑定」，<b>绝不写队列</b>（队列唯一事实源在引擎侧文件）→ 不产生第二事实源。</div>
+    </div>
+
+    <!-- ② 实时部分 -->
+    <div class="col right">
+      <div class="cap">② <b>实时部分</b> · 只读 · 1s 轮询（UE 阻塞期间照常刷新）</div>
+
+      <div class="status">
+        <span class="dot"></span><span class="w">监听中</span>
+        <span class="d">队列 8 · 交付 12 · 失败 1</span>
+        <span class="b">预计追平 18:20 (2h38m · k=0.55s/帧)</span>
+        <span class="sp">数据 1s 前 · progress 心跳 0.4s</span>
+      </div>
+
+      <!-- 暂停态的状态行（同一位置，切换显示）——无解释文案 -->
+      <div class="status" style="border-color:rgba(240,180,41,.45)">
+        <span class="dot amber"></span><span class="a">暂停中</span>
+        <span class="d">完成当前条后退出 · 剩余约 12 分钟</span>
+        <span class="d">队列保留 5 条</span>
+        <span class="sp">数据 1s 前</span>
+      </div>
+
+      <div class="idband">
+        <span class="d">身份</span><span class="w">pm/</span><span class="ar">→</span><span class="id">/Game/ID/ID_pm</span>
+        <span class="src">来源 0818_face_rom_pm_001_9 · ROM 建议 pm/ · 已绑定</span>
+      </div>
+
+      <div class="prog">
+        <div class="t"><span class="w">pm/Anims_ep029</span><span class="st">深度解算</span><span class="d">62%</span></div>
+        <div class="bar"><i style="width:62%"></i></div>
+        <div class="m">Pass 2/3 · 1517/2351 帧 · 已跑 12m04s · 剩余约 7m20s</div>
+        <div class="note">导入段：按素材体积估算；超出预估 → 撤掉进度条，显示“以实际完成为准”（不谎报）</div>
+      </div>
+
+      <div class="sec">
+        <div class="h">加载中 <span class="c">3 <span class="i">ⓘ</span></span></div>
+        <div class="b">
+          <div><span class="a">[盘]</span> am/Anims_ep031 <span class="d">已到达 · 等待接管</span></div>
+          <div><span class="d">[·]</span> am/Anims_ep030 <span class="d">待解算</span></div>
+          <div><span class="a">[·]</span> pm/Anims_ep012 <span class="a">等待身份绑定</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="h">处理中 <span class="c">1</span></div>
+        <div class="b"><span class="b">[表演]</span> pm/Anims_ep029 <span class="d">深度解算中</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="h" style="color:var(--red)">已失败 <span class="c">1</span></div>
+        <div class="b"><span class="r">[败]</span> pm/Anims_ep007 <span class="d">素材目录不存在（放回热文件夹后自动重排）</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="h">已完成 <span class="c">12 · 仅表演交付</span></div>
+        <div class="filters"><span class="btn sm on">全部</span><span class="btn sm">失败</span><span class="btn sm">待处理</span></div>
+        <div class="b">
+          <div><span class="g">✓</span> am/Anims_ep002 <span class="d">33min →</span> Anims_ep002.fbx</div>
+          <div><span class="g">✓</span> am/Anims_ep001 <span class="d">34min →</span> Anims_ep001.fbx</div>
+          <div><span class="d">… 另有 10 条（虚拟化列表，87 条不卡）</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="h">日志 / 事件 <span class="c">倒序 · 可筛选</span></div>
+        <div class="b">
+          <div><span class="d">15:42</span> <span class="g">完成</span> 交付 pm/Anims_ep002（1980s）</div>
+          <div><span class="d">15:40</span> <span class="b">运行</span> 解算: pm/Anims_ep002（identity: /Game/ID/ID_pm）</div>
+          <div><span class="d">15:38</span> <span class="a">待处理</span> pm/Anims_ep012 已发现 · 等待身份绑定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>数据源：stream_state.json + queue_state.json + progress.json（只读）</span>
+    <span>1s 轮询 · 内容无变化不重绘 · 后台线程读、Dispatcher 回 UI 线程</span>
+    <span class="r">不写回队列</span>
+  </div>
+</div>
+
+<div class="tray">
+  <div>
+    <div class="kv">托盘图标（状态色）</div>
+    <div style="margin-top:4px;line-height:1.9">
+      <span class="dot"></span> 运行中（解算/导入/导出）<br>
+      <span class="dot amber"></span> 暂停中（等待当前条完成）/ 等待身份 · 无素材<br>
+      <span class="dot dim"></span> 已暂停 · 引擎未运行<br>
+      <span class="dot red"></span> 失败 或 watchdog 重启中
+    </div>
+  </div>
+  <div class="menu">
+    打开监控窗口<br>启动 / 继续<br>暂停（跑完当前条退出）<br>强制结束（立即杀进程）<br>打开输出目录 · 打开日志<br>退出
+  </div>
+</div>
+
+<div class="degrade">
+  <div class="dg">
+    <div class="t">降级态 A · 文件缺失</div>
+    <div>状态文件未生成（引擎刚启动）→ 实时部分显示「等待数据…」，<b>不报错、不崩</b>，1s 后自动接管</div>
+  </div>
+  <div class="dg">
+    <div class="t">降级态 B · 心跳陈腐（底层卡死/引擎已挂）</div>
+    <div><span class="dot amber"></span>「底层无响应（progress 心跳 12m 未更新）」+ 仍可点击操作；watchdog 已在重启流程</div>
+  </div>
+  <div class="dg">
+    <div class="t">降级态 C · 文件半截/损坏</div>
+    <div>捕获异常 → 跳过本轮 → 显示「上次数据（N 秒前）」，下一轮恢复</div>
+  </div>
+</div>
+
+<div class="note" style="max-width:1000px">
+<b>不冻结的验收方法</b>：① 解算进行中（UE 主线程阻塞 34 分钟）→ 本窗口每秒走动、可点可切；
+② 人为挂起引擎进程 → UI 仍可操作并显示「底层无响应」；③ 删除/损坏状态文件 → 显示「等待数据」且不崩溃。<br><br>
+<b>暂停/继续的验收方法</b>：<br>
+① 空闲时点暂停 → 引擎与监控<b>立即</b>退出，UI 转为「已暂停」；<br>
+② 解算中点暂停 → UI 显示<b>「暂停中 · 剩余约 X 分钟」</b>（不得看起来像没响应），当前条跑完+导出后自动退出；<br>
+③ 点「启动/继续」→ 从队列 pending 处继续，<b>已 done 的不重跑</b>（幂等）；<br>
+④ 暂停期间投放新素材 → 留在热文件夹，恢复后被发现处理；<br>
+⑤ 崩溃（kill，无 intent）→ UI 显示「watchdog 重启中（第 N 次）」，恢复后<b>断点续跑</b>；<br>
+⑥ 已 failed 的任务<b>不自动重试</b>，需放回素材触发复活——UI 明示。<br><br>
+<b>模板新建的验收方法</b>：<br>
+① 点「新建」→ 复制模板工程完成，状态 JSON 目录与目录约定（`_id/` `{组}/`）已就位；<br>
+② 整个过程<b>不要求选择 .uproject、不触发编译</b>；<br>
+③ 新工程启动后 doctor 预检通过（编辑器/工程/热文件夹/引导脚本均存在）；<br>
+④ 新工程中做身份 → 绑定 → 跑通一条（与既有工程行为一致）。
+</div>
+</body>
+</html>

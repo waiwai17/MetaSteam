@@ -1,0 +1,73 @@
+# MetaSol / MetaSteam — 只提交"源码 + 文档 + 测试脚本 + 轻量测试集"。
+# 规则：默认不忽略，逐项排除（排除项均为"可再生 / 体积大 / 二进制中间产物 / 私有数据"）。
+
+# ── 可再生的大体积资产（本地可重建，见 deploy/tools/make_template.py 与文档）
+deploy/assets/                 # MetaHuman 公共资产包 ~2.2GB（从参考工程导出，不入库）
+
+# ── 调试符号 / 编译中间产物
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.obj
+**/Binaries/**/Intermediate/
+**/Intermediate/
+**/Saved/
+**/.vs/
+**/DerivedDataCache/
+
+# ── .NET 构建输出
+**/bin/
+**/obj/
+
+# ── Python 缓存
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# ── 测试与运行产生的素材/产物（体积大，可随时再生）
+spike/_archive/
+spike/projects/
+spike/accept*/
+spike/fulltest*/
+spike/accept_d1_*/
+spike/新建工程测试/
+spike/*.log
+spike/*.txt
+**/test_output*/
+**/*_out/
+!tests/fixtures/**
+
+# ── 与本项目无关的工作目录（工具/试验）
+experiments/
+maya/
+jobs/
+Config/
+
+# ── 媒体与 UE 二进制资产（除 fixtures 里的轻量测试集外）
+*.uasset
+*.umap
+*.fbx
+*.mov
+*.mp4
+*.bin
+*.jpg
+*.png
+!tests/fixtures/**
+
+# ── 本机运行时配置（换机器必然不同 → 用 launcher.py init 生成，不入库）
+deploy/tools/pipeline.config.json
+deploy/tools/pipeline.config.fulltest.json
+deploy/tools/projects.json
+tests/fixtures/testset_local/
+
+# ── 运行日志
+*.log
+*.log.bak
+build_log.txt
+*.tmp
+
+# ── 编辑器/系统
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,105 @@
+{
+  "updated": "2026-09-23 12:42:08",
+  "tasks": [
+    {
+      "key": "_id/0818_face_rom_am_001_11",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept6_inbox\\_id\\0818_face_rom_am_001_11",
+      "kind": "id",
+      "group": "",
+      "identity": "",
+      "status": "done",
+      "enqueued_at": 1790059023.8881323,
+      "updated_at": 1790059317.600532,
+      "error": ""
+    },
+    {
+      "key": "am/emotion__fear__high_readable__hr_fea_012_003",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept6_inbox\\am\\emotion__fear__high_readable__hr_fea_012_003",
+      "kind": "perf",
+      "group": "am",
+      "identity": "/Game/CaptureManager/ID4/0818_face_rom_am_001_11",
+      "status": "done",
+      "enqueued_at": 1790059023.8891287,
+      "updated_at": 1790060605.1638608,
+      "error": "",
+      "duration": 1282.4,
+      "frames": 2616
+    },
+    {
+      "key": "am/event__emphasis_peak_lock__lock_emp_003_001",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept6_inbox\\am\\event__emphasis_peak_lock__lock_emp_003_001",
+      "kind": "perf",
+      "group": "am",
+      "identity": "/Game/CaptureManager/ID4/0818_face_rom_am_001_11",
+      "status": "done",
+      "enqueued_at": 1790060625.066151,
+      "updated_at": 1790062006.6833482,
+      "error": "",
+      "duration": 1381.5,
+      "frames": 2246
+    },
+    {
+      "key": "am/prosody__intonation__final_confirm_rise__int_001_b_001",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept6_inbox\\am\\prosody__intonation__final_confirm_rise__int_001_b_001",
+      "kind": "perf",
+      "group": "am",
+      "identity": "/Game/CaptureManager/ID4/0818_face_rom_am_001_11",
+      "status": "done",
+      "enqueued_at": 1790060625.0671482,
+      "updated_at": 1790063455.5766006,
+      "error": "",
+      "duration": 1394.1,
+      "frames": 2434
+    },
+    {
+      "key": "_id/0818_face_rom_pm_001_9",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept6_inbox\\_id\\0818_face_rom_pm_001_9",
+      "kind": "id",
+      "group": "",
+      "identity": "",
+      "status": "done",
+      "enqueued_at": 1790063456.9065998,
+      "updated_at": 1790063478.5257266,
+      "error": ""
+    },
+    {
+      "key": "pm/dynemo__confused__detection__dyn_con_001_a_002",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept6_inbox\\pm\\dynemo__confused__detection__dyn_con_001_a_002",
+      "kind": "perf",
+      "group": "pm",
+      "identity": "/Game/CaptureManager/ID4/0818_face_rom_pm_001_9",
+      "status": "done",
+      "enqueued_at": 1790065845.4264379,
+      "updated_at": 1790067380.61244,
+      "error": "",
+      "duration": 1530.6,
+      "frames": 2313
+    },
+    {
+      "key": "am/dynemo__serious__focus_in__dyn_ser_016_001",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept_d1_inbox\\am\\dynemo__serious__focus_in__dyn_ser_016_001",
+      "kind": "perf",
+      "group": "am",
+      "identity": "/Game/CaptureManager/ID4/0818_face_rom_am_001_11",
+      "status": "done",
+      "enqueued_at": 1790132781.118635,
+      "updated_at": 1790134335.6689024,
+      "error": "",
+      "duration": 1554.1,
+      "frames": 2607
+    },
+    {
+      "key": "am/emotion__surprised__high_readable__hr_sur_008_001",
+      "dir": "E:/Work/Mobu_maya/MetaSol/spike/accept_d1_inbox\\am\\emotion__surprised__high_readable__hr_sur_008_001",
+      "kind": "perf",
+      "group": "am",
+      "identity": "/Game/CaptureManager/ID4/0818_face_rom_am_001_11",
+      "status": "done",
+      "enqueued_at": 1790136755.4714148,
+      "updated_at": 1790138528.6169531,
+      "error": "",
+      "duration": 1085.6,
+      "frames": 2656
+    }
+  ]
+}

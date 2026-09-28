@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>方案A · 融合单控制台 · 原型 v5</title>
+<style>
+  :root{--bg:#0b0c0e;--term:#000;--line:#1f2226;--fg:#c8ccd0;--dim:#5f666e;--blue:#4a9eff;
+    --green:#3ddc84;--amber:#f0b429;--red:#ff5f56;--white:#e8ebee;--sl:#1e2024;--sl2:#242629;
+    --sl3:#2a2c31;--sll:#383b41;--slt:#dcdfe3;--sld:#8f939a;--slb:#2461b8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);padding:20px;font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:var(--fg)}
+  h1{font-size:15px;color:var(--white)} .sub{font-size:10px;color:var(--dim);margin:3px 0 4px}
+  .lg{font-size:10px;color:var(--dim);margin-bottom:14px;line-height:1.7} .lg b{color:var(--white)}
+  .wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:398px} .col.wide{width:470px}
+  .cap{font-size:10px;color:var(--dim);margin-bottom:5px} .cap b{color:var(--blue)}
+  .note{font-size:10px;color:var(--dim);margin-top:7px;line-height:1.65} .note b{color:var(--white)}
+  .k{display:inline-block;background:#15171a;border:1px solid var(--line);border-radius:3px;padding:0 5px;font-family:Consolas,monospace;color:var(--white)}
+  .term{background:var(--term);border:1px solid var(--line);border-radius:4px;overflow:hidden;
+        font-family:Consolas,monospace;font-size:11px;line-height:1.5}
+  .term .bar{background:#15171a;padding:5px 9px;font-size:10px;color:var(--dim);display:flex;gap:8px;border-bottom:1px solid var(--line)}
+  .term .bar .t{color:var(--fg)} .term .bar .r{margin-left:auto;font-size:9px}
+  .term .body{padding:8px 10px;white-space:pre}
+  .term .foot{border-top:1px solid var(--line);padding:4px 9px;font-size:9px;color:var(--dim);display:flex;gap:8px}
+  .term .foot .r{margin-left:auto}
+  .d{color:var(--dim)} .b{color:var(--blue)} .g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)} .w{color:var(--white)}
+  .pane{background:var(--sl);border:1px solid var(--sll);border-radius:6px;overflow:hidden}
+  .pane.top{border-top:3px solid var(--slb)}
+  .phd{padding:7px 11px;background:var(--sl3);font-size:11px;font-weight:600;color:var(--slt);display:flex}
+  .phd .tag{margin-left:auto;font-size:9px;color:var(--sld);font-weight:400}
+  .pbd{padding:11px}
+  .steps{display:flex;gap:6px;margin-bottom:10px}
+  .st{flex:1;background:var(--sl2);border:1px solid var(--sll);border-radius:5px;padding:7px 5px;text-align:center}
+  .st .n{font-size:9px;color:var(--sld)} .st .t{font-size:11px;font-weight:600;margin-top:2px;color:var(--slt)}
+  .st.done{border-color:rgba(61,220,132,.45)} .st.done .t{color:var(--green)}
+  .st.cur{border-color:var(--slb);background:rgba(36,97,184,.14)} .st.cur .t{color:#6aa6ff}
+  .mod{border:1px solid var(--sll);border-radius:5px;margin-bottom:8px;overflow:hidden}
+  .mod>.h{background:var(--sl3);padding:4px 9px;font-size:10px;font-weight:600;color:var(--slt);display:flex}
+  .mod>.h .r{margin-left:auto;font-size:9px;color:var(--sld);font-weight:400}
+  .mod>.b{padding:9px}
+  .row{display:flex;align-items:center;gap:7px;font-size:10px;padding:2px 0}
+  .row .kk{width:62px;color:var(--sld);flex:none}
+  .row .v{flex:1;background:#131417;border:1px solid var(--sll);border-radius:3px;padding:3px 6px;font-size:10px;font-family:Consolas,monospace;color:var(--slt)}
+  .btn{background:var(--sl3);border:1px solid var(--sll);color:var(--slt);font-size:10px;padding:3px 9px;border-radius:3px}
+  .btn.pri{background:var(--slb);border-color:var(--slb);color:#fff;font-weight:600}
+  .btn.sm{padding:2px 7px;font-size:9px}
+  .idst{font-size:10px;color:var(--amber);background:rgba(240,180,41,.1);border-left:2px solid var(--amber);padding:4px 7px;margin-bottom:7px}
+  .ops{display:flex;gap:6px} .kv{font-size:10px;color:var(--sld);line-height:1.7} .kv b{color:var(--slt)}
+  .stline{display:flex;align-items:center;gap:6px;font-size:10px;margin:6px 0}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--sld)} .dot.run{background:var(--slb)}
+</style>
+</head>
+<body>
+<h1>方案 A · 融合单控制台 · 原型 v5</h1>
+<div class="sub">2026-09-20 · 待确认后实施（P3a 面板收敛 + P3b 全局控制台 一次编译）</div>
+<div class="lg">
+载体约束：<b>本机图形窗不可用</b>（DWM 不渲染 + 焦点切换崩溃 textinputframework.dll）→ 控制台走 <b>conhost</b>（与现有单任务窗同机制，已投产验证）。<br>
+<b>Windows 单进程只能有一个 conhost</b> → ② 单任务进度 与 ③ 全局进度 <b>融合为一个控制台，上下分区渲染</b>（“处理中”行 = 单任务进度实时镜像，读 progress.json）。<br>
+降级：原“双击打开 FBX”改为快捷键 <span class="k">O</span> 打开输出目录 / <span class="k">T</span> 置顶切换（conhost 鼠标命中成本高）。
+</div>
+
+<div class="wrap">
+
+  <div class="col">
+    <div class="cap">① <b>UE 面板</b> · Stream Tab（Slate GUI · 会冻结）</div>
+    <div class="pane top">
+      <div class="phd">MetaHuman 解算工具 · Stream <span class="tag">配置/启动/身份/兜底</span></div>
+      <div class="pbd">
+        <div class="steps">
+          <div class="st done"><div class="n">①</div><div class="t">配置</div></div>
+          <div class="st cur"><div class="n">②</div><div class="t">身份</div></div>
+          <div class="st"><div class="n">③</div><div class="t">监听</div></div>
+        </div>
+        <div class="mod">
+          <div class="h">配置 <span class="r">E:\Capture\inbox</span></div>
+          <div class="b">
+            <div class="row"><span class="kk">加载路径</span><span class="v">E:\Capture\inbox</span><span class="btn sm">浏览</span></div>
+            <div class="row"><span class="kk">身份导入</span><span class="v">/Game/CaptureManager/ID</span><span class="btn sm">浏览</span></div>
+            <div class="row"><span class="kk">素材导入</span><span class="v">/Game/CaptureManager/Auto</span><span class="btn sm">浏览</span></div>
+            <div class="row"><span class="kk">导出路径</span><span class="v">E:\OUT\auto_fbx</span><span class="btn sm">浏览</span></div>
+            <div style="text-align:right;margin-top:7px"><span class="btn sm">保存为默认</span></div>
+          </div>
+        </div>
+        <div class="mod">
+          <div class="h">状态 <span class="r">不含任何计数</span></div>
+          <div class="b">
+            <div class="stline"><span class="dot run"></span>运行中</div>
+            <div style="text-align:right"><span class="btn sm">预检</span> <span class="btn sm pri">停止监听</span></div>
+          </div>
+        </div>
+        <div class="mod">
+          <div class="h">身份 <span class="r">Semi</span></div>
+          <div class="b">
+            <div class="row"><span class="kk">身份资产目录</span><span class="v">/Game/ID</span><span class="btn sm">浏览</span></div>
+            <div class="idst">ID 状态：已导入 · 待制作身份（0818_face_rom_pm_002）</div>
+            <div class="ops"><span class="btn sm">导入项目</span><span class="btn sm">打开编辑器</span><span class="btn sm pri">确认完成</span></div>
+            <div class="kv" style="margin-top:8px">身份分组<br><b>am/</b> → ID_am<br><b>pm/</b> → ID_pm</div>
+          </div>
+        </div>
+        <div class="mod">
+          <div class="h">日志 <span class="r">兜底</span></div>
+          <div class="b" style="font-family:Consolas,monospace;font-size:9px;color:var(--sld);line-height:1.6">
+            15:42 [MHS_LOG] ID 素材就绪: 0818_face_rom_pm_002<br>
+            15:40 [MHS_LOG] Stream 监听启动
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note">面板收敛：删大数字/四步卡/当前行/异常行/事件面板；加步骤条 + 身份状态行。</div>
+  </div>
+
+  <div class="col wide">
+    <div class="cap">②+③ <b>融合控制台</b>（单一 conhost · 1s 整屏刷新 · 解算期间照常走动）</div>
+    <div class="term">
+      <div class="bar"><span class="t">Stream 全局控制台</span><span class="r">conhost · 置顶 ▣</span></div>
+      <div class="body"><span class="d">$</span> stream --watch <span class="w">E:\Capture\inbox</span>
+
+<span class="d">── 身份 ─────────────────────────────────────────</span>
+<span class="d">[15:42:07]</span> <span class="a">ⓘ</span> pm/ <span class="d">→</span> <span class="w">ID_pm</span>   <span class="d">· ID素材</span> 已导入·待制作身份
+
+<span class="d">[15:42:07]</span> <span class="b">●</span> 运行中   <span class="d">队列</span> 12   <span class="d">交付</span> <span class="g">8</span>   <span class="d">失败</span> 0
+<span class="d">[15:42:07]</span> <span class="d">预计追平</span> <span class="b">18:20</span> <span class="d">(2h38m · k=0.55s/帧)</span>
+
+<span class="d">── 加载中 ───────────────────────────────────────</span>
+<span class="d">[09:15]</span> <span class="a">⏳</span> pm/Anims_ep031   加载中（等待就绪）
+<span class="d">[09:12]</span> <span class="a">⏳</span> pm/Anims_ep030   已加载 · 待解算
+
+<span class="d">── 处理中（单任务进度实时镜像）──────────────────</span>
+<span class="d">[09:02]</span> <span class="b">⏵</span> pm/Anims_ep029   解算
+<span class="d">        [</span><span class="b">############--------</span><span class="d">]</span> 62%  Pass 2/3  1517/2351 帧
+<span class="d">        已跑 12m04s · 剩余约 7m20s</span>
+
+<span class="d">── 已完成（仅表演交付）──────────────────────────</span>
+<span class="d">[08:47]</span> <span class="g">✓</span> am/Anims_ep002   33min  <span class="d">→</span> Anims_ep002.fbx
+<span class="d">[08:12]</span> <span class="g">✓</span> am/Anims_ep001   34min  <span class="d">→</span> Anims_ep001.fbx
+<span class="d">        … 另有 6 条</span>
+
+<span class="d">─────────────────────────────────────────────────</span>
+<span class="d">T 置顶切换   O 打开输出目录   （关闭=隐藏，不终止流程）</span>
+</div>
+      <div class="foot"><span>stream_state.json + progress.json</span><span>加载 2 · 处理 1 · 完成 8</span><span class="r">1s</span></div>
+    </div>
+    <div class="note">
+      <b>刷新机制</b>：独立线程 1s 读两个 json → 组装文本 → <span class="k">WriteConsoleOutput</span> 矩形整屏写入（无 cls、无闪烁）。<br>
+      <b>关键验收</b>：解算 34 分钟阻塞、UE 面板冻结期间，本控制台<span class="k">照常 1s 刷新</span>。<br>
+      <b>归属顺序</b>：全局控制台先持有 conhost（[启动监听] 时）→ 单任务窗后启动时不拥有 console → 永不误 FreeConsole。
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

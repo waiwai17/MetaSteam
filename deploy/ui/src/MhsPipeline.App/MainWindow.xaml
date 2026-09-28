@@ -1,0 +1,583 @@
+﻿<Window x:Class="MhsPipeline.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="mhs_pipeline · 流式解算监控" Height="760" Width="1120"
+        Background="#FF0B0C0E" Foreground="#FFC8CCD0">
+    <Window.Resources>
+        <SolidColorBrush x:Key="ModBg" Color="#FF1A1D21"/>
+        <SolidColorBrush x:Key="Line" Color="#FF23262B"/>
+        <SolidColorBrush x:Key="Inp" Color="#FF0F1114"/>
+        <SolidColorBrush x:Key="BtnBg" Color="#FF262A30"/>
+        <SolidColorBrush x:Key="Dim" Color="#FF5F666E"/>
+        <SolidColorBrush x:Key="Wht" Color="#FFE8EBEE"/>
+        <SolidColorBrush x:Key="Blue" Color="#FF4A9EFF"/>
+        <SolidColorBrush x:Key="Red" Color="#FFFF5F56"/>
+
+        <Style x:Key="ModBox" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource ModBg}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Margin" Value="0,0,0,9"/>
+        </Style>
+        <Style x:Key="Hd" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style x:Key="BtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BtnBg}"/>
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Padding" Value="9,4"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style x:Key="Pbtn" TargetType="Button" BasedOn="{StaticResource BtnStyle}">
+            <Setter Property="Background" Value="#FF2461B8"/>
+            <Setter Property="BorderBrush" Value="#FF2461B8"/>
+        </Style>
+        <Style x:Key="Txt" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Dim}"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style x:Key="Row" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,2,0,2"/>
+        </Style>
+        <Style x:Key="Lbl" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Dim}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Width" Value="58"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="InpBox" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource Inp}"/>
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Padding" Value="5,3"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 深色下拉（隐式样式：工程/绑定目标/身份资产所有 ComboBox 统一生效——
+             WPF 默认模板是白色弹出层，与深色面板不符） -->
+        <ControlTemplate x:Key="CmbToggleTpl" TargetType="ToggleButton">
+            <Border Background="{StaticResource Inp}" BorderBrush="{StaticResource Line}"
+                    BorderThickness="1" CornerRadius="3">
+                <Path Data="M0,0 L4,4 8,0" Stroke="{StaticResource Dim}" StrokeThickness="1.5"
+                      HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,7,0"/>
+            </Border>
+        </ControlTemplate>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd" Background="#FF141619" Padding="7,4">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FF2A3038"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FF223140"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource {x:Type ComboBoxItem}}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton Template="{StaticResource CmbToggleTpl}"
+                                          Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <ContentPresenter Margin="8,3,26,3" VerticalAlignment="Center" IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
+                            <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Placement="Bottom" PopupAnimation="Fade"
+                                   Focusable="False">
+                                <Border Background="#FF141619" BorderBrush="{StaticResource Line}"
+                                        BorderThickness="1" CornerRadius="3"
+                                        MinWidth="{TemplateBinding ActualWidth}" MaxHeight="260">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 深色滚动条（隐式样式：所有 ScrollViewer / 下拉面板统一生效） -->
+        <Style x:Key="GhostBtn" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <ControlTemplate x:Key="VBarTpl" TargetType="ScrollBar">
+            <Grid Background="#FF141619">
+                <Track x:Name="PART_Track" IsDirectionReversed="True">
+                    <Track.Thumb>
+                        <Thumb>
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Border Background="#FF3A3F46" CornerRadius="5" Margin="2,1"/>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Track.Thumb>
+                    <Track.IncreaseRepeatButton>
+                        <RepeatButton Style="{StaticResource GhostBtn}" Command="ScrollBar.PageDownCommand"/>
+                    </Track.IncreaseRepeatButton>
+                    <Track.DecreaseRepeatButton>
+                        <RepeatButton Style="{StaticResource GhostBtn}" Command="ScrollBar.PageUpCommand"/>
+                    </Track.DecreaseRepeatButton>
+                </Track>
+            </Grid>
+        </ControlTemplate>
+        <ControlTemplate x:Key="HBarTpl" TargetType="ScrollBar">
+            <Grid Background="#FF141619">
+                <Track x:Name="PART_Track" IsDirectionReversed="False">
+                    <Track.Thumb>
+                        <Thumb>
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Border Background="#FF3A3F46" CornerRadius="5" Margin="1,2"/>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Track.Thumb>
+                    <Track.IncreaseRepeatButton>
+                        <RepeatButton Style="{StaticResource GhostBtn}" Command="ScrollBar.PageRightCommand"/>
+                    </Track.IncreaseRepeatButton>
+                    <Track.DecreaseRepeatButton>
+                        <RepeatButton Style="{StaticResource GhostBtn}" Command="ScrollBar.PageLeftCommand"/>
+                    </Track.DecreaseRepeatButton>
+                </Track>
+            </Grid>
+        </ControlTemplate>
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="#FF141619"/>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Template" Value="{StaticResource VBarTpl}"/>
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Width" Value="Auto"/>
+                    <Setter Property="Height" Value="10"/>
+                    <Setter Property="Template" Value="{StaticResource HBarTpl}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 深色下拉项（默认主题是浅色，深色界面下字看不清） -->
+        <Style x:Key="DarkComboItem" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" Padding="6,4">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FF24405F"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FF2461B8"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 深色 ComboBox（默认模板自带浅色外观，必须整套自绘） -->
+        <Style x:Key="DarkCombo" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{StaticResource Wht}"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
+                                          Background="{StaticResource Inp}"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                      RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                                CornerRadius="3">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="18"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter Grid.Column="0" Margin="6,0,0,0"
+                                                                  VerticalAlignment="Center"/>
+                                                <Path Grid.Column="1" Data="M0,0 L4,4 L8,0"
+                                                      Stroke="#FF8F939A" StrokeThickness="1.4"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                                <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  Margin="6,0,22,0" VerticalAlignment="Center"
+                                                  TextBlock.Foreground="{StaticResource Wht}"/>
+                            </ToggleButton>
+                            <Popup x:Name="PART_Popup" AllowsTransparency="True" Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}" Focusable="False">
+                                <Border Background="{StaticResource ModBg}"
+                                        BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                        CornerRadius="4" MinWidth="{TemplateBinding ActualWidth}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <ScrollViewer>
+                                        <StackPanel IsItemsHost="True"
+                                                    KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ① 配置面板 -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,10,0">
+            <StackPanel>
+                <Border Style="{StaticResource ModBox}">
+                    <StackPanel Margin="9">
+                        <TextBlock Text="工程" Style="{StaticResource Hd}"/>
+                        <!-- 选择已有工程：历史 + 模板 + 扫描结果（切换即重载该工程的队列/状态/绑定） -->
+                        <ComboBox x:Name="ProjectCombo" Margin="0,0,0,4" FontSize="10"
+                                  DisplayMemberPath="Display" SelectedValuePath="Path"
+                                  SelectionChanged="OnProjectPicked"/>
+                        <TextBlock x:Name="ProjectText" Text="-" Style="{StaticResource Txt}"
+                                   Margin="0,0,0,5" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="新建" Style="{StaticResource Pbtn}" Click="OnNewProject"/>
+                            <Button Content="浏览…" Style="{StaticResource BtnStyle}" Click="OnBrowseProject"/>
+                            <Button Content="扫描目录" Style="{StaticResource BtnStyle}" Click="OnScanProjects"/>
+                            <Button Content="打开目录" Style="{StaticResource BtnStyle}" Click="OnOpenProjectDir"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="模板" Style="{StaticResource Lbl}"/>
+                            <TextBlock Text="MH_Template（内置 · 免编译）" Style="{StaticResource Txt}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource ModBox}">
+                    <StackPanel Margin="9">
+                        <TextBlock Text="引擎控制" Style="{StaticResource Hd}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Ellipse x:Name="StateDot" Width="8" Height="8" Fill="{StaticResource Dim}"/>
+                            <TextBlock x:Name="EngineStateText" Text="未运行" Style="{StaticResource Row}" Margin="6,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="启动 / 继续" Style="{StaticResource Pbtn}" Click="OnStart"/>
+                            <Button Content="暂停" Style="{StaticResource BtnStyle}" Click="OnPause"/>
+                            <Button Content="强制结束" Style="{StaticResource BtnStyle}" Click="OnForceStop"/>
+                            <Button x:Name="PrecheckBtn" Content="预检" Style="{StaticResource BtnStyle}" Margin="8,0,0,0" Click="OnPrecheck"/>
+                            <Button x:Name="OpenEditorBtn" Content="打开工程" Style="{StaticResource BtnStyle}"
+                                    Margin="6,0,0,0" Click="OnOpenProjectEditor"
+                                    ToolTip="以带界面方式打开当前工程（制作/检查身份用）。无头管线在跑时会提示先暂停——同一工程两个编辑器会共写同一份队列"/>
+                        </StackPanel>
+                        <!-- 预检结果内联显示（不弹窗：一眼可见、可滚动、可复制） -->
+                        <Border x:Name="PrecheckBox" Visibility="Collapsed" Margin="0,6,0,0"
+                                Background="#FF121417" BorderBrush="#FF32363C" BorderThickness="1"
+                                CornerRadius="3" Padding="6">
+                            <StackPanel>
+                                <TextBlock x:Name="PrecheckHead" Text="" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                                    <TextBox x:Name="PrecheckBody" Text="" IsReadOnly="True" BorderThickness="0"
+                                             Background="Transparent" Foreground="#FFE6E8EA"
+                                             FontFamily="Consolas" FontSize="10" TextWrapping="NoWrap"/>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource ModBox}">
+                    <StackPanel Margin="9">
+                        <TextBlock Text="路径" Style="{StaticResource Hd}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="加载路径" Style="{StaticResource Lbl}"/>
+                            <TextBox x:Name="InboxBox" Style="{StaticResource InpBox}" Width="216"
+                                     LostKeyboardFocus="OnInboxEdited" KeyDown="OnInboxKeyDown"/>
+                            <Button Content="浏览" Style="{StaticResource BtnStyle}" Margin="6,0,0,0" Click="OnBrowseInbox"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="身份导入" Style="{StaticResource Lbl}"/>
+                            <TextBox x:Name="IdRootBox" Style="{StaticResource InpBox}" Width="216"/>
+                            <Button Content="浏览" Style="{StaticResource BtnStyle}" Margin="6,0,0,0" Click="OnBrowseIdRoot"/>
+                        </StackPanel>
+                        <TextBlock Text="↑ 录制的 ID 素材（ROM）导入位置＝制作身份的原料，不是做好的身份"
+                                   Style="{StaticResource Txt}" Margin="58,0,0,4" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="素材导入" Style="{StaticResource Lbl}"/>
+                            <TextBox x:Name="ImportRootBox" Style="{StaticResource InpBox}" Width="216"/>
+                            <Button Content="浏览" Style="{StaticResource BtnStyle}" Margin="6,0,0,0" Click="OnBrowseImportRoot"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="导出路径" Style="{StaticResource Lbl}"/>
+                            <TextBox x:Name="OutBox" Style="{StaticResource InpBox}" Width="216"/>
+                            <Button Content="浏览" Style="{StaticResource BtnStyle}" Margin="6,0,0,0" Click="OnBrowseOut"/>
+                        </StackPanel>
+                        <TextBlock Text="交付落点：&lt;父目录&gt;/&lt;身份名&gt;/（按匹配身份自动分目录）"
+                                   Style="{StaticResource Txt}" Margin="58,2,0,0" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+                            <Button Content="保存为默认" Style="{StaticResource BtnStyle}" Click="OnSaveConfig"/>
+                            <Button Content="打开输出目录" Style="{StaticResource BtnStyle}" Click="OnOpenOutput"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource ModBox}">
+                    <StackPanel Margin="9">
+                        <TextBlock Text="身份与绑定" Style="{StaticResource Hd}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="身份资产" Style="{StaticResource Lbl}"/>
+                            <ComboBox x:Name="IdentityCombo" Width="216" Style="{StaticResource DarkCombo}"
+                                      SelectedValuePath="Path">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Display}" ToolTip="{Binding Path}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Content="刷新" Style="{StaticResource BtnStyle}" Margin="6,0,0,0" Click="OnRefreshIndex"/>
+                        </StackPanel>
+                        <TextBlock Text="↑ 做好的身份资产（工程内自动识别，含大小；非身份导入路径）"
+                                   Style="{StaticResource Txt}" Margin="58,0,0,4" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="绑定目标" Style="{StaticResource Lbl}"/>
+                            <ComboBox x:Name="GroupCombo" Width="216" Style="{StaticResource DarkCombo}"
+                                      SelectedValuePath="Value"
+                                      SelectionChanged="OnGroupSelectionChanged">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Display}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Button Content="确认绑定" Style="{StaticResource Pbtn}" Click="OnConfirmBinding"/>
+                            <Button Content="清除绑定" Style="{StaticResource BtnStyle}" Click="OnClearBinding"/>
+                        </StackPanel>
+                        <TextBlock Text="身份分组" Style="{StaticResource Hd}" Margin="0,8,0,4"/>
+                        <ItemsControl x:Name="GroupMatrix"><ItemsControl.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Text}" Style="{StaticResource Row}" Foreground="{Binding Fg}"/></DataTemplate>
+                        </ItemsControl.ItemTemplate></ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource ModBox}">
+                    <StackPanel Margin="9">
+                        <TextBlock Text="实例" Style="{StaticResource Hd}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="实例名" Style="{StaticResource Lbl}"/>
+                            <TextBox x:Name="InstanceBox" Style="{StaticResource InpBox}" Width="216"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Web 端口" Style="{StaticResource Lbl}"/>
+                            <TextBox x:Name="WebPortBox" Style="{StaticResource InpBox}" Width="216"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ② 实时部分 -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,9">
+                <!-- 区头：只读定位说明 -->
+                <StackPanel Orientation="Horizontal" Margin="2,0,0,6">
+                    <TextBlock Text="实时部分" Style="{StaticResource Hd}"/>
+                    <TextBlock Text="只读 · 1s 轮询（UE 阻塞期间照常刷新）" Style="{StaticResource Txt}" Margin="8,2,0,0"/>
+                </StackPanel>
+
+                <!-- ① 状态卡：绿/琥珀/红状态词 + 计数 + ETA（蓝）+ 数据年龄（右对齐） -->
+                <Border Style="{StaticResource ModBox}" Padding="9" Margin="0,0,0,6">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Ellipse x:Name="LiveDot" Width="8" Height="8" Fill="{StaticResource Dim}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="StateText" Text="未运行" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Wht}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="CountsLine" Text="等待数据" Style="{StaticResource Txt}" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="EtaText" Text="" FontSize="11" Foreground="{StaticResource Blue}" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" x:Name="DataAge" Text="" Style="{StaticResource Txt}" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- ② 身份卡：分组 → 资产（白），来源/建议（灰，右对齐） -->
+                <Border x:Name="IdentityBandPanel" Style="{StaticResource ModBox}" Padding="9,6" Margin="0,0,0,6" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <TextBlock Text="身份  " Style="{StaticResource Txt}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="IdGroup" Text="" FontSize="11" Foreground="{StaticResource Wht}" VerticalAlignment="Center"/>
+                            <TextBlock Text="  →  " Style="{StaticResource Txt}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="IdPath" Text="" FontSize="11" Foreground="{StaticResource Wht}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" x:Name="IdTail" Text="" Style="{StaticResource Txt}" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- ③ 进度卡（蓝框，仅活跃时出现）：标题+百分比 / 进度条 / 帧级明细 / 估算口径说明 -->
+                <Border x:Name="ProgressCard" Style="{StaticResource ModBox}" Padding="9" Margin="0,0,0,6"
+                        BorderBrush="{StaticResource Blue}" BorderThickness="1" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock x:Name="ProgressTitle" Text="" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Wht}" Margin="0,0,0,5"/>
+                        <ProgressBar x:Name="ProgressBar" Height="8" Minimum="0" Maximum="100" Value="0"
+                                     Background="#FF0E1013" BorderBrush="{StaticResource Line}" Foreground="{StaticResource Blue}"/>
+                        <TextBlock x:Name="ProgressDetail" Text="" Style="{StaticResource Txt}" Margin="0,5,0,0"/>
+                        <TextBlock Text="导入段：按素材体积估算 · 导出段预估 · 解算段实时完成为准（不假报）"
+                                   Style="{StaticResource Txt}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+                <!-- 隐藏兼容：旧代码引用的 ProgressText（ProgressTitle 已覆盖显示） -->
+                <TextBlock x:Name="ProgressText" Text="" Visibility="Collapsed"/>
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- 加载中：磁盘已到达但尚未开跑的一切（未就绪/待解算/待绑定/未接管） -->
+                    <Border Style="{StaticResource ModBox}" x:Name="LoadingBox" Margin="0,0,0,8">
+                        <StackPanel Margin="9">
+                            <DockPanel Margin="0,0,0,6" LastChildFill="False">
+                                <TextBlock Text="加载中" Style="{StaticResource Hd}"/>
+                                <TextBlock x:Name="LoadingCount" Text="0 条" Style="{StaticResource Txt}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ItemsControl x:Name="LoadingList"><ItemsControl.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding Text}" Style="{StaticResource Row}" Foreground="{Binding Fg}"/></DataTemplate>
+                            </ItemsControl.ItemTemplate></ItemsControl>
+                            <TextBlock x:Name="LoadingEmpty" Text="（无——素材拷入热文件夹后出现在这里）" Style="{StaticResource Txt}" Margin="0,2,0,2"/>
+                        </StackPanel>
+                    </Border>
+                    <!-- 处理中：正在执行的任务（哪个任务、什么阶段；帧级进度在上方进度卡） -->
+                    <Border Style="{StaticResource ModBox}" x:Name="ActiveBox" Margin="0,0,0,8">
+                        <StackPanel Margin="9">
+                            <DockPanel Margin="0,0,0,6" LastChildFill="False">
+                                <TextBlock Text="处理中" Style="{StaticResource Hd}"/>
+                                <TextBlock x:Name="ActiveCount" Text="0 条" Style="{StaticResource Txt}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ItemsControl x:Name="ActiveList"><ItemsControl.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding Text}" Style="{StaticResource Row}" Foreground="{Binding Fg}"/></DataTemplate>
+                            </ItemsControl.ItemTemplate></ItemsControl>
+                            <TextBlock x:Name="ActiveEmpty" Text="（无——排队任务按顺序接续）" Style="{StaticResource Txt}" Margin="0,2,0,2"/>
+                        </StackPanel>
+                    </Border>
+                    <!-- 已失败：原因可读 + 放回热文件夹自动重排的提示 -->
+                    <Border Style="{StaticResource ModBox}" x:Name="FailedBox" Margin="0,0,0,8">
+                        <StackPanel Margin="9">
+                            <DockPanel Margin="0,0,0,6" LastChildFill="False">
+                                <TextBlock Text="已失败" Style="{StaticResource Hd}" Foreground="{StaticResource Red}"/>
+                                <TextBlock x:Name="FailedCount" Text="0 条" Style="{StaticResource Txt}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ItemsControl x:Name="FailedList"><ItemsControl.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding Text}" Style="{StaticResource Row}" Foreground="{Binding Fg}"/></DataTemplate>
+                            </ItemsControl.ItemTemplate></ItemsControl>
+                            <TextBlock x:Name="FailedEmpty" Text="（无）" Style="{StaticResource Txt}" Margin="0,2,0,2"/>
+                        </StackPanel>
+                    </Border>
+                    <!-- 已完成：仅表演交付（ID 不是交付物），最新在上 -->
+                    <Border Style="{StaticResource ModBox}" x:Name="DoneBox" Margin="0,0,0,8">
+                        <StackPanel Margin="9">
+                            <DockPanel Margin="0,0,0,6" LastChildFill="False">
+                                <TextBlock Text="已完成" Style="{StaticResource Hd}"/>
+                                <TextBlock x:Name="DoneCount" Text="0 条 · 仅表演交付" Style="{StaticResource Txt}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ItemsControl x:Name="DoneList"><ItemsControl.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding Text}" Style="{StaticResource Row}" Foreground="{Binding Fg}"/></DataTemplate>
+                            </ItemsControl.ItemTemplate></ItemsControl>
+                            <TextBlock x:Name="DoneEmpty" Text="（无——第一条解算完成后落在这里）" Style="{StaticResource Txt}" Margin="0,2,0,2"/>
+                        </StackPanel>
+                    </Border>
+                    <!-- 日志/事件：全量时间线（可筛），系统解释自己的每一步 -->
+                    <Border Style="{StaticResource ModBox}">
+                        <StackPanel Margin="9">
+                            <DockPanel Margin="0,0,0,6" LastChildFill="False">
+                                <TextBlock Text="日志 / 事件" Style="{StaticResource Hd}"/>
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                    <TextBlock Text="倒序 · 可筛选" Style="{StaticResource Txt}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <Button x:Name="FilterAll" Content="全部" Style="{StaticResource BtnStyle}" Click="OnFilterAll"/>
+                                    <Button x:Name="FilterFailed" Content="失败" Style="{StaticResource BtnStyle}" Click="OnFilterFailed"/>
+                                    <Button x:Name="FilterPending" Content="待处理" Style="{StaticResource BtnStyle}" Margin="0" Click="OnFilterPending"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl x:Name="EventList"><ItemsControl.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding Text}" Style="{StaticResource Row}" Foreground="{Binding Fg}"/></DataTemplate>
+                            </ItemsControl.ItemTemplate></ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="2" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="stream_state · queue_state · progress（只读）" Style="{StaticResource Txt}"/>
+                    <TextBlock Text="1s 轮询 · 不写回队列" Style="{StaticResource Txt}" Margin="14,0,0,0"/>
+                    <TextBlock x:Name="ActionText" Text="" Foreground="{StaticResource Blue}" FontSize="11" Margin="14,0,0,0"/>
+                    <TextBlock x:Name="ErrorText" Text="" Foreground="{StaticResource Red}" FontSize="11" Margin="14,0,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

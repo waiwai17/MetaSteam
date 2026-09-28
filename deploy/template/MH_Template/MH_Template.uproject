@@ -1,0 +1,78 @@
+{
+ "FileVersion": 3,
+ "EngineAssociation": "{7AC9F0D1-4586-8E10-215C-459FB0661066}",
+ "Category": "",
+ "Description": "MetaHuman 流式解算管线模板工程",
+ "Plugins": [
+  {
+   "Name": "ModelingToolsEditorMode",
+   "Enabled": true,
+   "TargetAllowList": [
+    "Editor"
+   ]
+  },
+  {
+   "Name": "SunPosition",
+   "Enabled": true
+  },
+  {
+   "Name": "GeoReferencing",
+   "Enabled": true
+  },
+  {
+   "Name": "MetaHumanRuntime",
+   "Enabled": true
+  },
+  {
+   "Name": "LiveLinkControlRig",
+   "Enabled": true
+  },
+  {
+   "Name": "AppleARKitFaceSupport",
+   "Enabled": true,
+   "SupportedTargetPlatforms": [
+    "IOS",
+    "Win64",
+    "Mac",
+    "Linux",
+    "Android"
+   ]
+  },
+  {
+   "Name": "LiveLinkHub",
+   "Enabled": true
+  },
+  {
+   "Name": "LiveLinkExampleDevice",
+   "Enabled": true
+  },
+  {
+   "Name": "LiveLinkFaceImporter",
+   "Enabled": true
+  },
+  {
+   "Name": "CaptureManagerEditor",
+   "Enabled": true
+  },
+  {
+   "Name": "PerformanceCaptureWorkflow",
+   "Enabled": true
+  },
+  {
+   "Name": "MetaHuman",
+   "Enabled": true,
+   "SupportedTargetPlatforms": [
+    "Win64",
+    "Linux"
+   ]
+  },
+  {
+   "Name": "MetaHumanCalibrationProcessing",
+   "Enabled": true,
+   "SupportedTargetPlatforms": [
+    "Win64",
+    "Linux"
+   ]
+  }
+ ]
+}

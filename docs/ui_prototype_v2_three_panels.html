@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三个控制台 · 设计方案 v2</title>
+<style>
+  :root{
+    --bg:#101114; --panel:#1e2024; --card:#242629; --surface:#2a2c31;
+    --line:#383b41; --text:#dcdfe3; --dim:#8f939a;
+    --blue:#2461b8; --green:#3ca55c; --red:#d4544a; --amber:#c8912f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  body{background:var(--bg);color:var(--text);padding:24px}
+  h1{font-size:16px;font-weight:600;margin-bottom:4px}
+  .sub{font-size:11px;color:var(--dim);margin-bottom:18px}
+  .wrap{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:400px}
+  .col.wide{width:460px}
+
+  .pane{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .pane.top{border-top:3px solid var(--blue)}
+  .pane.top.native{border-top:3px solid var(--green)}
+  .phd{padding:8px 12px;background:var(--surface);font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .phd .tag{margin-left:auto;font-size:9px;color:var(--dim);font-weight:400}
+  .pbd{padding:12px}
+
+  .cap{font-size:10px;color:var(--dim);margin:0 0 6px 2px;letter-spacing:.5px}
+  .note{font-size:10px;color:var(--dim);margin-top:10px;line-height:1.6}
+  .note b{color:var(--text);font-weight:600}
+
+  /* 步骤条（明晰步骤） */
+  .steps{display:flex;gap:6px;margin-bottom:12px}
+  .step{flex:1;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:8px 6px;text-align:center}
+  .step .n{font-size:9px;color:var(--dim)}
+  .step .t{font-size:11px;font-weight:600;margin-top:2px}
+  .step.done{border-color:rgba(60,165,92,.5)}
+  .step.done .t{color:var(--green)}
+  .step.cur{border-color:var(--blue);background:rgba(36,97,184,.14)}
+  .step.cur .t{color:var(--blue)}
+  .next{font-size:10px;color:var(--blue);background:rgba(36,97,184,.1);border-left:2px solid var(--blue);padding:6px 8px;border-radius:0 4px 4px 0;margin-bottom:12px}
+
+  /* 模块 */
+  .mod{border:1px solid var(--line);border-radius:5px;margin-bottom:10px;overflow:hidden}
+  .mod > .h{background:var(--surface);padding:5px 10px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .mod > .h .r{margin-left:auto;font-size:9px;color:var(--dim);font-weight:400}
+  .mod > .b{padding:10px}
+  .row{display:flex;align-items:center;gap:8px;font-size:11px;padding:3px 0}
+  .row .k{width:60px;color:var(--dim);flex:none}
+  .row .v{flex:1;background:#131417;border:1px solid var(--line);border-radius:3px;padding:3px 7px;font-size:10px;font-family:Consolas,monospace;color:var(--text)}
+  .row .v.mut{color:var(--dim)}
+  .btn{background:var(--surface);border:1px solid var(--line);color:var(--text);font-size:10px;padding:4px 12px;border-radius:3px}
+  .btn.pri{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  .btns{display:flex;gap:8px;margin-top:8px}
+
+  /* 大数字 */
+  .big{text-align:center;padding:12px 0 4px}
+  .big .num{font-size:38px;font-weight:700;letter-spacing:1px}
+  .big .lbl{font-size:10px;color:var(--dim);margin-top:1px}
+  .snap{text-align:center;font-size:9px;color:var(--amber);margin-top:2px}
+
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex:none}
+  .dot.run{background:var(--blue);box-shadow:0 0 5px rgba(36,97,184,.8)}
+  .dot.off{background:var(--dim)}
+  .st{display:flex;align-items:center;gap:6px;font-size:11px;justify-content:center;margin-top:6px}
+
+  /* 列表（全局控制台） */
+  .lst{font-family:Consolas,monospace;font-size:10px}
+  .lst .hd{color:var(--dim);font-size:9px;padding:5px 0 3px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .lst .li{display:flex;gap:8px;padding:2px 0;color:var(--dim)}
+  .lst .li .t{flex:none;width:38px}
+  .lst .li .nm{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lst .li .s{flex:none;font-size:9px}
+  .lst .li.ok .s{color:var(--green)}
+  .lst .li.act .s{color:var(--blue)}
+  .lst .li.wait .s{color:var(--amber)}
+
+  .bar{height:6px;background:#131417;border-radius:3px;overflow:hidden;margin:8px 0 4px}
+  .bar > i{display:block;height:100%;background:var(--blue);width:62%}
+  .barinfo{font-size:10px;color:var(--dim);font-family:Consolas,monospace}
+
+  .foot{display:flex;gap:6px;align-items:center;font-size:9px;color:var(--dim);margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+  .foot .b{margin-left:auto}
+</style>
+</head>
+<body>
+<h1>Stream 三控制台 · 设计方案 v2</h1>
+<div class="sub">2026-09-20 · ① UE 面板（配置/启动/兜底） ② 单任务进度（原生·UE 内线程） ③ 全局进度控制台（<b>独立进程常驻</b>）</div>
+
+<div class="wrap">
+
+  <!-- ① UE 面板 -->
+  <div class="col">
+    <div class="cap">① UE 面板 · Stream Tab（会随解算冻结 → 只做配置/启动/兜底）</div>
+    <div class="pane top">
+      <div class="phd">MetaHuman 解算工具 · Stream <span class="tag">UE 内</span></div>
+      <div class="pbd">
+
+        <div class="steps">
+          <div class="step done"><div class="n">①</div><div class="t">配置</div></div>
+          <div class="step done"><div class="n">②</div><div class="t">身份</div></div>
+          <div class="step cur"><div class="n">③</div><div class="t">监听</div></div>
+        </div>
+        <div class="next">下一步：填热文件夹与输出路径 → 点 [开始]，实时进度看全局控制台</div>
+
+        <div class="mod">
+          <div class="h">配置 <span class="r">可折叠 · E:\Capture\inbox</span></div>
+          <div class="b">
+            <div class="row"><span class="k">热文件夹</span><span class="v">E:\Capture\inbox</span><span class="btn">浏览</span></div>
+            <div class="row"><span class="k">ID资产目录</span><span class="v">/Game/ID</span><span class="btn">浏览</span></div>
+            <div class="row"><span class="k">导入路径</span><span class="v">/Game/CaptureManager/Auto</span><span class="btn">浏览</span></div>
+            <div class="row"><span class="k">输出路径</span><span class="v">E:\OUT\auto_fbx</span><span class="btn">浏览</span></div>
+            <div class="btns"><span class="btn">保存为默认</span></div>
+          </div>
+        </div>
+
+        <div class="mod">
+          <div class="h">状态（兜底 · 段间更新）</div>
+          <div class="b">
+            <div class="big">
+              <div class="num">8 / 12</div>
+              <div class="lbl">今日交付 · 已同步</div>
+              <div class="snap">截至 15:42 · 解算期间本面板不刷新</div>
+            </div>
+            <div class="st"><span class="dot run"></span>运行中 · 详情见全局控制台</div>
+            <div class="btns" style="justify-content:center"><span class="btn">停止</span><span class="btn pri">开始</span></div>
+          </div>
+        </div>
+
+        <div class="mod">
+          <div class="h">身份分组 <span class="r">显式绑定</span></div>
+          <div class="b">
+            <div class="row"><span class="k">am/</span><span class="v">ID_am · 15/15</span></div>
+            <div class="row"><span class="k">pm/</span><span class="v">ID_pm · 13/15 待1</span><span class="btn">确认完成</span></div>
+          </div>
+        </div>
+
+        <div class="mod">
+          <div class="h">日志 <span class="r">兜底查阅</span></div>
+          <div class="b" style="font-family:Consolas,monospace;font-size:9px;color:var(--dim);line-height:1.6">
+            15:42 [MHS_LOG] Stream 监听启动<br>
+            15:42 [MHS_LOG] pm/ep030 排队中<br>
+            15:41 [MHS_LOG] 身份已就绪 ID_pm
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="note">
+      模块：步骤条 · 配置 · 状态（大数字保留）· 身份 · 日志<br>
+      大数字加<b>"截至 HH:MM"</b>快照语义 + 引导语，不再假装实时。
+    </div>
+  </div>
+
+  <!-- ② 单任务 -->
+  <div class="col">
+    <div class="cap">② 单任务进度（原生小窗 · UE 内独立线程 · 500ms）</div>
+    <div class="pane top native">
+      <div class="phd">解算中 · Anims_ep029 <span class="tag">随段开合</span></div>
+      <div class="pbd">
+        <div class="steps">
+          <div class="step done"><div class="n">1</div><div class="t">导入</div></div>
+          <div class="step cur"><div class="n">2</div><div class="t">解算</div></div>
+          <div class="step"><div class="n">3</div><div class="t">导出</div></div>
+        </div>
+        <div class="bar"><i style="width:62%"></i></div>
+        <div class="barinfo">62% · Pass 2/3 · 1517/2351 帧</div>
+        <div class="barinfo">已跑 12m04s · 剩余约 7m20s</div>
+        <div class="foot"><span class="dot run"></span>心跳 500ms 写入 progress.json</div>
+      </div>
+    </div>
+    <div class="note">
+      保持现状（已投产验证），仅补<b>三步步骤条</b>。<br>
+      与游戏线程解耦 → 解算 34 分钟期间照常走动。
+    </div>
+  </div>
+
+  <!-- ③ 全局控制台 -->
+  <div class="col wide">
+    <div class="cap">③ 全局进度控制台（<b>UE 控制台 · 原生小窗</b> · 独立线程 · 1s · 解算阻塞期间照常刷新）</div>
+    <div class="pane top native">
+      <div class="phd">Stream 全局进度 · 截至 15:42:07
+        <span class="tag">置顶 □ · 隐藏 ×</span>
+      </div>
+      <div class="pbd">
+
+        <div class="big" style="padding:6px 0 2px">
+          <div class="num" style="font-size:32px">8 / 12</div>
+          <div class="lbl">已交付 · 已加载 · 失败 0</div>
+          <div class="snap" style="color:var(--blue)">预计追平 18:20（约 2h38m · 按 MOV 帧数×标定 k）</div>
+        </div>
+
+        <div class="lst">
+          <div class="hd">当前加载（随文件夹加载实时增长）</div>
+          <div class="li wait"><span class="t">09:12</span><span class="nm">pm/Anims_ep030</span><span class="s">已加载 · 待解算</span></div>
+          <div class="li wait"><span class="t">09:15</span><span class="nm">pm/Anims_ep031</span><span class="s">加载中（等待就绪）</span></div>
+
+          <div class="hd" style="margin-top:8px">处理中</div>
+          <div class="li act"><span class="t">09:02</span><span class="nm">pm/Anims_ep029</span><span class="s">解算中 Pass2/3 62%</span></div>
+
+          <div class="hd" style="margin-top:8px">已完成（随 FBX 输出更新）</div>
+          <div class="li ok"><span class="t">08:12</span><span class="nm">am/Anims_ep001</span><span class="s">34min → FBX</span></div>
+          <div class="li ok"><span class="t">08:47</span><span class="nm">am/Anims_ep002</span><span class="s">33min → FBX</span></div>
+          <div class="li ok"><span class="t">09:20</span><span class="nm">am/Anims_ep003</span><span class="s">35min → FBX</span></div>
+          <div class="li" style="color:var(--dim);font-style:italic">… 另有 5 条（双击行打开 FBX 文件夹）</div>
+        </div>
+
+        <div class="foot">
+          <span class="dot run"></span>UE 控制台运行中 · 数据源 stream_state.json
+          <span class="b">1s</span>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <b>载体</b>：UE 进程内原生小窗（独立线程 + 消息循环，复用 FMHSProgressWindow 模型）
+      → 解算 34 分钟阻塞、面板冻结期间<b>照常刷新</b>；生命周期随 UE（UE 关闭即消失，预期行为）。<br>
+      三列：加载中 / 处理中 / 已完成；预期时长 = 帧数 × 在线标定 k（换机器自动收敛）。<br>
+      唯一跑在 UE 之外的是 <b>Web 数据端</b>（附加，缺失不影响工作）。
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

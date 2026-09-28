@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Stream 实时进度</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#17191c; --card:#1d2024; --line:#2a2e34; --dim:#8a919a; --wht:#e6e8ea;
+          --blue:#4a9eff; --green:#62d88a; --amber:#ffb14a; --red:#ff6b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:14px; background:var(--bg); color:var(--wht);
+         font:12px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:6px;
+          padding:9px 11px; margin-bottom:8px; }
+  .dim { color:var(--dim); }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .grow { flex:1 1 auto; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#555; display:inline-block; }
+  .dot.g { background:var(--green); } .dot.a { background:var(--amber); }
+  .dot.r { background:var(--red); }  .dot.gray { background:#666; }
+  h4 { margin:0 0 6px; font-size:12px; color:var(--dim); font-weight:600; }
+  .bar { height:8px; background:#0e1013; border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--blue); width:0; transition:width .4s; }
+  .pcard { border-color:var(--blue); }
+  .ttl { font-weight:600; }
+  .g { color:var(--green); } .a { color:var(--amber); } .r { color:var(--red); } .b { color:var(--blue); }
+  .cnt { color:var(--dim); }
+  .empty { color:#5a6068; }
+  .evt .lv-完成 { color:var(--green); } .evt .lv-失败 { color:var(--red); }
+  .evt .lv-运行 { color:var(--blue); }  .evt .lv-待处理 { color:var(--amber); }
+  button { background:#23262b; color:var(--wht); border:1px solid var(--line);
+           border-radius:3px; padding:2px 10px; font-size:11px; cursor:pointer; }
+  button.on { background:#2e6fd6; border-color:#2e6fd6; }
+  .right { margin-left:auto; }
+  .big { font-size:34px; font-weight:600; line-height:1; letter-spacing:-1px; }
+  .bigsub { font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="row">
+    <span class="big g" id="bigNum">0</span>
+    <span class="dim bigsub" id="bigSub"></span>
+    <span class="right dim" id="bigMeta"></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <span class="dot" id="dot"></span><b id="state">未运行</b>
+    <span class="dim" id="counts">等待数据</span>
+    <span class="b" id="eta"></span>
+    <span class="dim right" id="age"></span>
+  </div>
+</div>
+
+<div class="card" id="idCard" style="display:none">
+  <div class="row">
+    <span class="dim">身份</span><span id="idGrp"></span>
+    <span class="dim">→</span><span id="idPath"></span>
+    <span class="dim right" id="idTail"></span>
+  </div>
+</div>
+
+<div class="card pcard" id="pCard" style="display:none">
+  <div class="ttl" id="pTitle"></div>
+  <div class="bar" style="margin:6px 0"><div id="pBar"></div></div>
+  <div class="dim" id="pDetail"></div>
+  <div class="dim" style="margin-top:4px">导入段：按素材体积估算 · 导出段预估 · 解算段实时完成为准（不假报）</div>
+</div>
+
+<div class="card">
+  <h4>加载中（等待就绪 / 待解算 / 待绑定）</h4>
+  <div id="loading"></div>
+</div>
+<div class="card">
+  <h4>处理中（正在执行的任务）</h4>
+  <div id="active"></div>
+</div>
+<div class="card">
+  <h4 class="r">已失败（把素材放回热文件夹后自动重新排队）</h4>
+  <div id="failed"></div>
+</div>
+<div class="card">
+  <h4>已完成（仅表演交付）</h4>
+  <div id="done"></div>
+</div>
+<div class="card">
+  <div class="row" style="margin-bottom:6px">
+    <h4 style="margin:0">日志 / 事件</h4>
+    <span class="right">
+      <button id="f0" class="on" onclick="setFilter(0,this)">全部</button>
+      <button id="f1" onclick="setFilter(1,this)">失败</button>
+      <button id="f2" onclick="setFilter(2,this)">待处理</button>
+    </span>
+  </div>
+  <div id="events"></div>
+</div>
+
+<script>
+"use strict";
+let filter = 0;
+function setFilter(n, btn) {
+  filter = n;
+  for (const i of [0,1,2]) document.getElementById("f"+i).classList.toggle("on", i===n);
+  render(JSON.parse(sessionStorage.getItem("last") || "{}"));
+}
+function esc(s){ return String(s??"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function fmtDur(s){ s=Math.max(0,Math.round(s||0)); const h=(s/3600)|0, m=((s%3600)/60)|0, ss=s%60;
+  return h? h+"h"+String(m).padStart(2,"0")+"m" : (m? m+"m"+String(ss).padStart(2,"0")+"s" : ss+"s"); }
+function stageCn(s){ return ({solving:"深度解算中", import:"导入素材中", importing:"导入素材中",
+  export:"导出中", exporting:"导出中", pending:"排队中", done:"完成", failed:"失败"})[s] || s; }
+
+function render(d) {
+  if (!d || !d.stream) return;
+  sessionStorage.setItem("last", JSON.stringify(d));
+  const s = d.stream, p = d.progress;
+  const running = s.state === "running";
+  // 心跳 = min(state 年龄, progress 年龄)：解算阻塞期 state.json 不更新（executor 在跑
+  // 同步解算），但 progress.json 每秒在跳 —— 只看 state 会把"正在解算"误报成"无响应"
+  const ageOf = t => t ? (Date.now() - new Date(String(t).replace(" ","T")).getTime())/1000 : 1e9;
+  const ageS = ageOf(s.updated_at), ageP = ageOf(p && p.updated_at);
+  const age = Math.min(ageS, ageP);
+  const fresh = age < 10;
+  const dot = document.getElementById("dot"), st = document.getElementById("state");
+  if (!fresh) { dot.className="dot a"; st.textContent="无响应（数据 "+fmtDur(age)+"前）"; st.className="a"; }
+  else { dot.className="dot g"; st.textContent = running ? "监听中" : (s.state==="idle" ? "监听中 · 无任务" : s.state); st.className="g"; }
+  // 大数字（视觉焦点）：已交付 / 已同步；失败多时右角红字提示
+  document.getElementById("bigNum").textContent = s.delivered ?? 0;
+  document.getElementById("bigNum").className = "big " + ((s.delivered||0) > 0 ? "g" : "");
+  document.getElementById("bigSub").textContent = " / " + (s.synced ?? 0) + " 已同步";
+  const bm = document.getElementById("bigMeta");
+  bm.textContent = (s.failed||0) > 0 ? "失败 " + s.failed : "";
+  bm.className = "right " + ((s.failed||0) > 0 ? "r" : "dim");
+  // 状态行不再重复交付数（已用大数字呈现）
+  document.getElementById("counts").textContent =
+    (s.queued!=null) ? `队列 ${s.queued} · 失败 ${s.failed}` : "等待数据";
+  // 数据年龄用心跳口径（state/progress 取新），解算期不会显示成"陈旧"
+  document.getElementById("age").textContent = age >= 1e8 ? "无数据" : fmtDur(age) + "前";
+  const eta = document.getElementById("eta");
+  if (s.queued>0 && s.eta_seconds!=null && s.eta_seconds>=0) {
+    const t = new Date(Date.now()+s.eta_seconds*1000);
+    eta.textContent = `预计追平 ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}（约 ${fmtDur(s.eta_seconds)}）`;
+  } else eta.textContent = "";
+
+  // 身份带
+  const ic = document.getElementById("idCard");
+  if (s.identity && s.identity.asset) {
+    ic.style.display="";
+    document.getElementById("idGrp").textContent = (s.identity.group ? s.identity.group+"/" : "(根)");
+    document.getElementById("idPath").textContent = s.identity.asset;
+    document.getElementById("idTail").textContent = s.identity.source ? "来源 "+s.identity.source : "";
+  } else ic.style.display="none";
+
+  // 进度卡（导入段按体积估算——引擎原始 percent 在导入阶段恒 0）
+  const pc = document.getElementById("pCard");
+  const active = p && ["import","solving","export"].includes(p.state);
+  if (active) {
+    pc.style.display="";
+    let pct = Math.max(0, Math.min(100, p.percent||0)), note = "";
+    if (p.state==="import" && s.import_estimate_seconds>0) {
+      const est = s.import_estimate_seconds;
+      if (p.elapsed_seconds <= est*1.2) { pct = Math.min(95, p.elapsed_seconds/est*100); note = `（估算 · 预计 ${fmtDur(est)}）`; }
+      else note = `（超出预估 ${fmtDur(est)}——大素材以实际完成为准）`;
+    }
+    document.getElementById("pTitle").textContent = note.includes("超出预估")
+      ? `${p.asset_name} ${stageCn(p.state)} 已进行 ${fmtDur(p.elapsed_seconds)} ${note}`
+      : `${p.asset_name} ${stageCn(p.state)} ${Math.round(pct)}% ${note}`;
+    document.getElementById("pBar").style.width = (note.includes("超出预估")?0:pct) + "%";
+    const pass = p.pass_count>1 ? `Pass ${p.pass}/${p.pass_count}` : "";
+    const frames = p.total_frames>0 ? `${p.current_frame}/${p.total_frames} 帧` : "";
+    const etaP = p.eta_seconds>0 ? `剩余约 ${fmtDur(p.eta_seconds)}` : "";
+    document.getElementById("pDetail").textContent = [pass,frames,`已跑 ${fmtDur(p.elapsed_seconds)}`,etaP].filter(Boolean).join(" · ");
+  } else pc.style.display="none";
+
+  // 加载中：state 的 loading + 服务端盘面扫描（[盘] 已到达未接管）
+  const known = new Set();
+  const td = s.tasks_detail || {};
+  const put = (arr) => arr.map(r => esc(r.key)+" · "+esc(r.note||r.error||stageCn(r.status)||""));
+  let loadHtml = (td.loading||[]).map(r => {
+    known.add(r.key);
+    return `<div class="${r.ready?"dim":"a"}">${esc(r.key)} · ${esc(r.note||"")}</div>`; }).join("");
+  (d.arrived||[]).forEach(k => { known.add(k);
+    loadHtml += `<div class="a">[盘] ${esc(k)} · 已到达 · 等待接管（当前任务完成后自动处理）</div>`; });
+  document.getElementById("loading").innerHTML = loadHtml || `<div class="empty">（无——素材拷入热文件夹后出现在这里）</div>`;
+
+  document.getElementById("active").innerHTML = (td.active||[]).map(a => { known.add(a.key);
+    return `<div class="b">[${a.kind==="id"?"ID":"表演"}] ${esc(a.key)} · ${esc(stageCn(a.status))}</div>`; }).join("")
+    || `<div class="empty">（无——排队任务按顺序接续）</div>`;
+  document.getElementById("failed").innerHTML = (td.failed||[]).map(f => { known.add(f.key);
+    return `<div class="r">[败] ${esc(f.key)} · ${esc(f.error||"")}</div>`; }).join("") || `<div class="empty">（无）</div>`;
+  document.getElementById("done").innerHTML = (td.done||[]).map(x => { known.add(x.key);
+    return `<div class="g">[v] ${esc(x.key)} · ${fmtDur(x.duration||0)}</div>`; }).join("") || `<div class="empty">（无——第一条解算完成后落在这里）</div>`;
+
+  // 事件（倒序 + 筛选 + 级别着色）
+  const evs = (s.events||[]).filter(e => filter===0 || (filter===1 ? e.lv==="失败" : e.lv==="待处理"));
+  document.getElementById("events").innerHTML = evs.length
+    ? evs.map(e => `<div class="evt"><span class="dim">${esc(e.t)}</span> <span class="lv-${esc(e.lv)}">${esc(e.lv)}</span> ${esc(e.tx)}</div>`).join("")
+    : `<div class="empty">（无匹配）</div>`;
+}
+
+async function tick() {
+  try {
+    const j = async u => { const r = await fetch(u, {cache:"no-store"}); return r.ok ? r.json() : null; };
+    const d = { stream: await j("/stream_state.json"), progress: await j("/progress.json") };
+    d.arrived = await j("/arrived.json").then(r => (r && r.arrived) || []).catch(() => []);
+    render(d);
+  } catch (e) { /* 下一轮重试 */ }
+}
+tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "ChannelsPerFrame" : 1,
+  "BitsPerChannel" : 16,
+  "FormatFlags" : 12,
+  "SampleRate" : 48000
+}

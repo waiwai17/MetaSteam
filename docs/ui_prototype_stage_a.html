@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MetaHumanSolver 面板 · 阶段A UI原型（导入目标路径可选）</title>
+<style>
+  :root{
+    --accent:#2461B8; --accent-hi:#3a7fd4;
+    --bg:#16171a; --panel:#1e2024; --panel2:#242629;
+    --surface:#2a2c31; --surface-hi:#32353b;
+    --line:#383b41; --text:#dcdfe3; --dim:#8f939a;
+    --ok:#3ca55c; --warn:#d9a441; --danger:#d4544a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  body{background:#0e0f11;color:var(--text);padding:28px;display:flex;flex-direction:column;align-items:center;gap:26px}
+  h1{font-size:17px;font-weight:600;color:#fff}
+  .sub{color:var(--dim);font-size:12px;margin-top:6px;text-align:center;line-height:1.7}
+  .sub b{color:#c8ccd2}
+
+  /* ============ 主面板 ============ */
+  .panel{width:760px;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+
+  /* 品牌区 + 状态灯 */
+  .brand{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .brand .name{font-size:14px;font-weight:600;color:#fff}
+  .brand .name span{color:var(--accent-hi)}
+  .brand .ver{font-size:10px;color:var(--dim);margin-left:8px}
+  .status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px rgba(60,165,92,.6)}
+
+  /* Tab */
+  .tabs{display:flex;background:#191a1d;border-bottom:1px solid var(--line)}
+  .tab{flex:1;text-align:center;padding:9px 0;font-size:12px;color:var(--dim);cursor:default;border-right:1px solid var(--line)}
+  .tab:last-child{border-right:none}
+  .tab.on{background:var(--panel);color:#fff;box-shadow:inset 0 2px 0 var(--accent);font-weight:600}
+
+  .body{padding:16px 18px}
+
+  /* 区块标题 */
+  .sec{font-size:13px;font-weight:600;color:var(--accent-hi);margin:4px 0 10px}
+  .sec.small{margin-top:16px}
+
+  /* 通用行 */
+  .row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .lbl{width:78px;flex:none;font-size:12px;color:var(--text);text-align:left}
+  .lbl.dim2{color:var(--dim)}
+  input[type=text]{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:3px;color:var(--text);font-size:12px;padding:6px 8px;outline:none}
+  input[type=text]::placeholder{color:#6b6f76}
+  input[type=text]:focus{border-color:var(--accent)}
+  .btn{flex:none;background:var(--surface-hi);border:1px solid var(--line);border-radius:3px;color:var(--text);font-size:12px;padding:6px 12px;cursor:pointer}
+  .btn:hover{background:#3b3e45}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;padding:7px 22px}
+  .btn.primary:hover{background:var(--accent-hi)}
+  .btn.icon{padding:6px 9px;color:var(--dim)}
+  .btn.icon:hover{color:var(--danger)}
+
+  /* 分割线 */
+  .divider{display:flex;align-items:center;gap:10px;margin:16px 0 14px;color:#4a4d53}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:#33363c}
+
+  /* 任务列表行 */
+  .taskrow{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+  .taskrow input{flex:1;min-width:0}
+
+  /* ★ 新增标注 */
+  .new{position:relative;outline:2px dashed var(--danger);outline-offset:5px;border-radius:4px}
+  .badge{position:absolute;top:-11px;right:-9px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9px;white-space:nowrap;letter-spacing:.5px}
+  .hint{font-size:10.5px;color:var(--dim);margin:-2px 0 8px 84px;line-height:1.6}
+  .hint .mono{font-family:Consolas,monospace;color:#9fc3ea}
+
+  /* 重名警告条 */
+  .warnbar{display:flex;gap:8px;align-items:flex-start;background:rgba(217,164,65,.10);border:1px solid rgba(217,164,65,.45);border-radius:4px;padding:8px 10px;margin:2px 0 8px 84px;font-size:11.5px;color:#e6c07b;line-height:1.6}
+  .warnbar .ic{flex:none;color:var(--warn);font-weight:700}
+
+  /* 高级选项 */
+  details{border:1px solid var(--line);border-radius:4px;background:#1b1d20}
+  summary{padding:8px 12px;font-size:12px;color:var(--dim);cursor:pointer;user-select:none;list-style:none}
+  summary::before{content:"▸ ";color:var(--dim)}
+  details[open] summary::before{content:"▾ "}
+  .adv{padding:2px 14px 12px}
+  .adv .note{font-size:10.5px;color:var(--dim);margin:6px 0 5px;line-height:1.5}
+  .adv textarea{width:100%;min-height:44px;background:var(--surface);border:1px solid var(--line);border-radius:3px;color:var(--text);font:11px Consolas,monospace;padding:6px 8px;resize:vertical;outline:none}
+  .chk{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text)}
+  .box{width:14px;height:14px;border:1px solid var(--line);border-radius:3px;background:var(--accent);position:relative;flex:none}
+  .box::after{content:"✓";position:absolute;inset:0;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+
+  /* 按钮行 + 预检 */
+  .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+  /* 进度 + 日志 */
+  .progress{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--panel2);border-top:1px solid var(--line)}
+  .pbar{flex:1;height:8px;background:#131417;border-radius:4px;overflow:hidden}
+  .pfill{width:26%;height:100%;background:var(--accent)}
+  .ptxt{font-size:11px;color:var(--dim);font-family:Consolas,monospace;white-space:nowrap}
+  .log{height:96px;margin:0 18px 14px;background:#131417;border:1px solid #2a2d33;border-radius:4px;padding:8px 10px;font:11px Consolas,monospace;color:#a8adb5;overflow:hidden;line-height:1.65}
+  .log .g{color:#6fbf83}.log .b{color:#9fc3ea}.log .y{color:#d9a441}.log .r{color:#d47069}
+  .logbar{display:flex;justify-content:space-between;align-items:center;padding:8px 18px 2px;font-size:10.5px;color:var(--dim)}
+
+  /* ============ 说明区 ============ */
+  .explain{width:760px;display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:4px;padding:14px 18px}
+  .card h3{font-size:13px;color:#fff;margin-bottom:8px}
+  .card h3 .tag{font-size:10px;background:rgba(36,97,184,.25);color:var(--accent-hi);padding:2px 8px;border-radius:3px;margin-left:8px;vertical-align:1px}
+  .card p{font-size:12px;color:#b9bec5;line-height:1.85}
+  .card p code{font-family:Consolas,monospace;background:#131417;padding:1px 6px;border-radius:3px;color:#9fc3ea;font-size:11px}
+  .card .kv{display:grid;grid-template-columns:130px 1fr;gap:4px 12px;font-size:12px;margin-top:8px}
+  .card .kv b{color:var(--accent-hi);font-weight:600}
+  .card .kv span{color:#b9bec5;line-height:1.7}
+</style>
+</head>
+<body>
+
+<h1>MetaHumanSolver 面板 · 阶段 A 原型</h1>
+<div class="sub">改动范围：<b>仅 ② 解算任务</b> 区新增一行「导入目标路径」+ 重名检测提示，其余 UI 不变<br>
+红色虚线框 = 本次新增内容</div>
+
+<!-- ==================== 面板原型 ==================== -->
+<div class="panel">
+
+  <div class="brand">
+    <div><span class="name">MetaHuman <span>Solver</span></span><span class="ver">v1.1 · 阶段A原型</span></div>
+    <div class="status"><span class="dot"></span>空闲</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on">深度解算</div>
+    <div class="tab">视频解算</div>
+    <div class="tab">音频解算</div>
+  </div>
+
+  <div class="body">
+
+    <div class="sec">① 身份创建</div>
+    <div class="row">
+      <div class="lbl">身份文件</div>
+      <input type="text" placeholder="ROM take 文件夹（磁盘）">
+      <div class="btn">浏览</div>
+      <div class="btn">导入</div>
+    </div>
+
+    <div class="divider">② 解算任务</div>
+
+    <!-- 任务列表 -->
+    <div class="taskrow">
+      <input type="text" placeholder="身份资产（MetaHumanIdentity）" value="/Game/ID/ID">
+      <div class="btn">…</div>
+      <input type="text" placeholder="表演源文件夹（磁盘）" value="E:\Work\Mobu_maya\SSV_Test\Facial_Data\PM_002">
+      <div class="btn">…</div>
+      <div class="btn icon">✕</div>
+    </div>
+    <div class="taskrow">
+      <input type="text" placeholder="身份资产（MetaHumanIdentity）">
+      <div class="btn">…</div>
+      <input type="text" placeholder="表演源文件夹（磁盘）">
+      <div class="btn">…</div>
+      <div class="btn">＋</div>
+    </div>
+
+    <!-- ★★★ 阶段A 新增：导入目标路径 ★★★ -->
+    <div style="height:10px"></div>
+    <div class="new">
+      <div class="badge">阶段A 新增</div>
+      <div class="row" style="margin-bottom:2px;margin-top:6px">
+        <div class="lbl">导入目标路径</div>
+        <input type="text" value="/Game/CaptureManager/Imports" style="font-family:Consolas,monospace">
+        <div class="btn">浏览</div>
+        <div class="btn">⟲</div>
+      </div>
+      <div class="hint">ⓘ UE 资产导入目录。实际落位 <span class="mono">/Game/CaptureManager/Imports/<b>{批次名}</b>/{take}</span>（批次子目录自动创建，与磁盘结构镜像）<br>
+      留空 = 默认 <span class="mono">/Game/CaptureManager/Imports</span>；⟲ 恢复默认值</div>
+    </div>
+
+    <!-- 重名警告示例（仅当检测到冲突时出现） -->
+    <div class="warnbar">
+      <span class="ic">⚠</span>
+      <span>目标路径下已存在同名 take：<b>Aimi_EP_Cry_MH_001</b>（内容校验不一致，可能为旧数据）。本次将<b>跳过导入</b>该 take；如需重导，请更换目标路径或先删除旧资产。<br>
+      <span style="color:var(--dim)">—— 此警告条仅在检测到重名时显示，正常情况下不可见（演示态）</span></span>
+    </div>
+
+    <!-- 输出路径（原有） -->
+    <div class="row">
+      <div class="lbl">输出路径</div>
+      <input type="text" placeholder="指定解算结果输出目录(磁盘 FBX 导出位置)" value="E:\OUT\face_ok">
+      <div class="btn">浏览</div>
+    </div>
+
+    <!-- 高级选项（原有） -->
+    <details>
+      <summary>高级选项（排除素材等）</summary>
+      <div class="adv">
+        <div class="note">排除素材（每行一个，如 ROM：CD_face_am01_8 或 face_am01_8）</div>
+        <textarea>face_pm01_7
+0818_face_rom_pm_002_11</textarea>
+        <div class="chk"><div class="box"></div>不含舌头与音频（纯面部动画交付）</div>
+      </div>
+    </details>
+
+    <div class="actions">
+      <div class="btn">一键预检</div>
+      <div class="btn primary">开始解算</div>
+    </div>
+  </div>
+
+  <div class="logbar"><span>运行日志</span><span>结果清单见交付 delivery_*.txt</span></div>
+  <div class="progress">
+    <div class="ptxt">[3/12]</div>
+    <div class="pbar"><div class="pfill"></div></div>
+    <div class="ptxt">5:23 / 12:26</div>
+  </div>
+  <div class="log">
+<span class="b">[MHS_LOG]</span> 批处理开始: 待处理 12 段（总计 12 段）<br>
+<span class="b">[MHS_LOG]</span> 导入批次 face_pm01: 10 个 take 待导入（并发按 imports_concurrency）<br>
+<span class="b">[MHS_LOG]</span> <span class="y">导入目标: /Game/CaptureManager/Imports/face_pm01（批次子目录）</span><br>
+<span class="b">[MHS_LOG]</span> 解算表演 2/10: context_answer__highamp__ang__e010_answer_001<br>
+<span class="g">[MHS_RESULT]</span> context_answer__highamp__ang__e009_answer_002|1|2058.3<br>
+<span class="b">[MHS_LOG]</span> 进度 3/12 · 本段 2058s · 剩余预估 5.2h
+  </div>
+</div>
+
+<!-- ==================== 改动说明 ==================== -->
+<div class="explain">
+  <div class="card">
+    <h3>A1 · 新增控件<span class="tag">导入目标路径</span></h3>
+    <p>位置：任务列表<b>下方、输出路径上方</b>（与任务组同层级——它是全局设置，对所有任务组生效，不占用已经拥挤的任务行）。样式与「输出路径」完全一致（标签 78px + 输入框 + 浏览 + 重置），符合现有 <code>MakeInputRow</code> 节奏。</p>
+    <div class="kv">
+      <b>默认值</b><span><code>/Game/CaptureManager/Imports</code>（与现状一致，老用户零学习成本）</span>
+      <b>自动子目录</b><span>实际落位 <code>{路径}/{批次名}/{take}</code>，批次名取表演源末级目录，与现有镜像逻辑一致</span>
+      <b>重置按钮 ⟲</b><span>一键恢复默认值，防误改后找不到素材</span>
+      <b>留空行为</b><span>等价默认值（不报错，hint 里说明）</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>A2 · 重名检测<span class="tag">防误覆盖</span></h3>
+    <p>提交任务时（<code>开始解算</code>/<code>一键预检</code>）对每个任务组扫描目标路径下的既有资产，与待导入 take 比对：</p>
+    <div class="kv">
+      <b>无重名</b><span>正常推进，日志提示导入目标全路径（见上方日志第 3 行演示）</span>
+      <b>完全一致</b><span>视为已导入，走现有幂等跳过（不重复导入）</span>
+      <b>重名不一致</b><span>黄色警告条逐条列出（见上方演示），该 take <b>跳过导入</b>——绝不静默覆盖；用户换路径或删旧资产后重跑</span>
+    </div>
+    <p style="margin-top:8px">检测在<b>预检阶段</b>完成（秒级，AssetRegistry 查询），不会等到几十分钟的解算阶段才暴露。</p>
+  </div>
+
+  <div class="card">
+    <h3>A3 · 改动边界<span class="tag">其余不变</span></h3>
+    <p>① 身份创建、任务行、输出路径、高级选项、日志/进度/结果区<b>全部保持原样</b>；job 的 <code>capture_root</code> 字段引擎侧本就存在，<b>Python 引擎零改动</b>；改动集中在 C++ 面板（新增 1 个输入行 + 替换 3 处硬编码 <code>:1181/:1464/:1500</code>）+ 重名检测逻辑，一次重编译交付。</p>
+  </div>
+</div>
+
+</body>
+</html>

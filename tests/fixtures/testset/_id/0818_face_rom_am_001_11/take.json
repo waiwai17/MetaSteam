@@ -1,0 +1,23 @@
+{
+  "endTimestamp" : {
+    "value" : 75646429523208,
+    "timescale" : 1000000000
+  },
+  "subject" : "face",
+  "identifier" : "20260818_0818_face_rom_am_001_11",
+  "deviceModel" : "iPhone15,2",
+  "calibrated" : false,
+  "frames" : 437,
+  "startTimestamp" : {
+    "value" : 75639145964083,
+    "timescale" : 1000000000
+  },
+  "videoTargetFrameRate" : 60,
+  "endTimecode" : "10:29:55:59.236",
+  "startTimecode" : "10:29:48:42.230",
+  "slate" : "0818_face_rom_am_001",
+  "version" : 1,
+  "appVersion" : "v1.7.2 (build 180)",
+  "date" : "2026-08-18T02:27:10Z",
+  "take" : 11
+}

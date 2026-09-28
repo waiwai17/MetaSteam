@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>控制台 CLI 风格 · 设计方案 v3</title>
+<style>
+  :root{
+    --bg:#0b0c0e; --term:#000000; --line:#1f2226;
+    --fg:#c8ccd0; --dim:#5f666e; --blue:#4a9eff; --green:#3ddc84;
+    --amber:#f0b429; --red:#ff5f56; --white:#e8ebee;
+    --slate:#1e2024; --slate2:#242629; --slate3:#2a2c31; --slateline:#383b41;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);padding:22px;font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:var(--fg)}
+  h1{font-size:15px;color:var(--white);font-weight:600}
+  .sub{font-size:10px;color:var(--dim);margin:3px 0 16px}
+  .wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:420px}
+  .cap{font-size:10px;color:var(--dim);margin-bottom:6px;letter-spacing:.4px}
+  .note{font-size:10px;color:var(--dim);margin-top:8px;line-height:1.65}
+  .note b{color:var(--white)}
+
+  /* ── CLI 终端 ── */
+  .term{background:var(--term);border:1px solid var(--line);border-radius:4px;overflow:hidden;
+        font-family:Consolas,"Cascadia Mono",monospace;font-size:11px;line-height:1.55}
+  .term .bar{background:#15171a;padding:5px 9px;font-size:10px;color:var(--dim);
+             display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+  .term .bar .t{color:var(--fg)}
+  .term .bar .r{margin-left:auto;color:var(--dim);font-size:9px}
+  .term .body{padding:8px 10px;white-space:pre}
+  .term .body .c-dim{color:var(--dim)}
+  .term .body .c-blue{color:var(--blue)}
+  .term .body .c-green{color:var(--green)}
+  .term .body .c-amber{color:var(--amber)}
+  .term .body .c-red{color:var(--red)}
+  .term .body .c-white{color:var(--white)}
+  .term .foot{border-top:1px solid var(--line);padding:4px 9px;font-size:9px;color:var(--dim);display:flex;gap:8px}
+  .term .foot .r{margin-left:auto}
+
+  /* ── Slate 面板（① 保留 GUI）── */
+  .pane{background:var(--slate);border:1px solid var(--slateline);border-radius:6px;overflow:hidden}
+  .pane.top{border-top:3px solid #2461b8}
+  .phd{padding:7px 11px;background:var(--slate3);font-size:11px;font-weight:600;color:#dcdfe3;display:flex;align-items:center;gap:8px}
+  .phd .tag{margin-left:auto;font-size:9px;color:#8f939a;font-weight:400}
+  .pbd{padding:11px}
+  .steps{display:flex;gap:6px;margin-bottom:9px}
+  .step{flex:1;background:var(--slate2);border:1px solid var(--slateline);border-radius:5px;padding:7px 5px;text-align:center}
+  .step .n{font-size:9px;color:#8f939a}
+  .step .t{font-size:11px;font-weight:600;margin-top:2px;color:#dcdfe3}
+  .step.done{border-color:rgba(61,220,132,.45)} .step.done .t{color:var(--green)}
+  .step.cur{border-color:#2461b8;background:rgba(36,97,184,.14)} .step.cur .t{color:#6aa6ff}
+  .next{font-size:10px;color:#9cc4ff;background:rgba(36,97,184,.12);border-left:2px solid #2461b8;padding:5px 8px;border-radius:0 3px 3px 0;margin-bottom:10px}
+  .mod{border:1px solid var(--slateline);border-radius:5px;margin-bottom:8px;overflow:hidden}
+  .mod > .h{background:var(--slate3);padding:4px 9px;font-size:10px;font-weight:600;color:#dcdfe3;display:flex;align-items:center}
+  .mod > .h .r{margin-left:auto;font-size:9px;color:#8f939a;font-weight:400}
+  .mod > .b{padding:9px}
+  .row{display:flex;align-items:center;gap:7px;font-size:10px;padding:2px 0}
+  .row .k{width:58px;color:#8f939a;flex:none}
+  .row .v{flex:1;background:#131417;border:1px solid var(--slateline);border-radius:3px;padding:3px 6px;font-size:10px;font-family:Consolas,monospace;color:#dcdfe3}
+  .btn{background:var(--slate3);border:1px solid var(--slateline);color:#dcdfe3;font-size:10px;padding:3px 9px;border-radius:3px}
+  .btn.pri{background:#2461b8;border-color:#2461b8;color:#fff;font-weight:600}
+  .mod .b > div:last-child{margin-top:7px;text-align:right}
+</style>
+</head>
+<body>
+<h1>控制台 CLI 风格 · 设计方案 v3</h1>
+<div class="sub">2026-09-20 · ②③ 为 CLI 文本面板（等宽/时间戳/状态前缀/ASCII 进度条）；① 保持 Slate 配置面板</div>
+
+<div class="wrap">
+
+  <!-- ① UE 面板（保持 GUI） -->
+  <div class="col">
+    <div class="cap">① UE 面板 · Stream Tab（Slate GUI · 配置/启动/兜底）</div>
+    <div class="pane top">
+      <div class="phd">MetaHuman 解算工具 · Stream <span class="tag">UE 内 · 会冻结</span></div>
+      <div class="pbd">
+        <div class="steps">
+          <div class="step done"><div class="n">①</div><div class="t">配置</div></div>
+          <div class="step done"><div class="n">②</div><div class="t">身份</div></div>
+          <div class="step cur"><div class="n">③</div><div class="t">监听</div></div>
+        </div>
+        <div class="next">下一步：填热文件夹与输出路径 → [开始]；实时进度见全局控制台</div>
+        <div class="mod">
+          <div class="h">配置 <span class="r">E:\Capture\inbox</span></div>
+          <div class="b">
+            <div class="row"><span class="k">热文件夹</span><span class="v">E:\Capture\inbox</span><span class="btn">浏览</span></div>
+            <div class="row"><span class="k">ID资产目录</span><span class="v">/Game/ID</span><span class="btn">浏览</span></div>
+            <div class="row"><span class="k">导入路径</span><span class="v">/Game/CaptureManager/Auto</span><span class="btn">浏览</span></div>
+            <div class="row"><span class="k">输出路径</span><span class="v">E:\OUT\auto_fbx</span><span class="btn">浏览</span></div>
+            <div><span class="btn">保存为默认</span></div>
+          </div>
+        </div>
+        <div class="mod">
+          <div class="h">状态（兜底 · 段间更新）</div>
+          <div class="b" style="font-size:10px;color:#8f939a;line-height:1.7">
+            交付 8 / 同步 12 · 截至 15:42<br>
+            ● 运行中 —— 详情见全局控制台<br>
+            <span style="color:#c8912f">解算期间本面板不刷新</span>
+          </div>
+        </div>
+        <div style="text-align:right;margin-top:8px"><span class="btn">停止</span> <span class="btn pri">开始</span></div>
+      </div>
+    </div>
+    <div class="note">① 保持 GUI（配置表单天然适合控件）。<b>不再承担监控</b>——监控全交给 ②③ 的 CLI 面板。</div>
+  </div>
+
+  <!-- ② 单任务 CLI -->
+  <div class="col">
+    <div class="cap">② 单任务进度（CLI 面板 · UE 内线程 · 500ms）</div>
+    <div class="term">
+      <div class="bar"><span class="t">单任务进度</span><span class="r">500ms</span></div>
+      <div class="body"><span class="c-white">&gt; </span><span class="c-white">Anims_ep029</span> <span class="c-blue">解算中</span>
+<span class="c-dim">[</span><span class="c-blue">############--------</span><span class="c-dim">]</span> <span class="c-white">62%</span>
+
+<span class="c-dim">Pass</span> 2/3   <span class="c-dim">帧</span> 1517/2351
+<span class="c-dim">已跑</span> 12m04s  <span class="c-dim">剩余约</span> 7m20s
+<span class="c-dim">阶段</span> 导入 ✓ · 解算 ⏵ · 导出 …
+</div>
+      <div class="foot"><span>progress.json</span><span class="r">心跳线程</span></div>
+    </div>
+    <div class="note">ASCII 进度条 <span style="font-family:Consolas">[####----]</span> + 阶段行，终端观感；与游戏线程解耦，阻塞期照常走。</div>
+  </div>
+
+  <!-- ③ 全局控制台 CLI -->
+  <div class="col">
+    <div class="cap">③ 全局进度控制台（CLI 面板 · UE 内原生窗 · 1s · 常驻）</div>
+    <div class="term">
+      <div class="bar"><span class="t">Stream 全局控制台</span><span class="r">1s · 置顶</span></div>
+      <div class="body"><span class="c-dim">$</span> stream --watch <span class="c-white">E:\Capture\inbox</span>
+<span class="c-dim">[15:42:07]</span> <span class="c-blue">●</span> 运行中  <span class="c-dim">队列</span> 12  <span class="c-dim">交付</span> <span class="c-green">8</span>  <span class="c-dim">失败</span> 0
+<span class="c-dim">[15:42:07]</span> <span class="c-dim">预计追平</span> <span class="c-blue">18:20</span> <span class="c-dim">(2h38m · k=0.55s/帧 · 剩余 2351×4 + 当前 7m)</span>
+
+<span class="c-dim">── 加载中 ────────────────────────────────</span>
+<span class="c-dim">[09:15]</span> <span class="c-amber">⏳</span> pm/Anims_ep031  加载中（等待就绪）
+<span class="c-dim">[09:12]</span> <span class="c-amber">⏳</span> pm/Anims_ep030  已加载 · 待解算
+
+<span class="c-dim">── 处理中 ────────────────────────────────</span>
+<span class="c-dim">[09:02]</span> <span class="c-blue">⏵</span> pm/Anims_ep029  解算  <span class="c-dim">[</span><span class="c-blue">############--------</span><span class="c-dim">]</span> 62%  12m04s/19m24s
+
+<span class="c-dim">── 已完成 ────────────────────────────────</span>
+<span class="c-dim">[08:47]</span> <span class="c-green">✓</span> am/Anims_ep002  33min  <span class="c-dim">→</span> Anims_ep002.fbx
+<span class="c-dim">[08:12]</span> <span class="c-green">✓</span> am/Anims_ep001  34min  <span class="c-dim">→</span> Anims_ep001.fbx
+<span class="c-dim">[08:05]</span> <span class="c-green">✓</span> am/Anims_ep000  33min  <span class="c-dim">→</span> Anims_ep000.fbx
+<span class="c-dim">… 另有 5 条 · 双击行打开 FBX 文件夹</span>
+</div>
+      <div class="foot"><span>stream_state.json</span><span>加载中 2 · 处理中 1 · 已完成 8</span><span class="r">1s</span></div>
+    </div>
+    <div class="note">
+      纯文本行：<b>[时间戳] 状态符 key 详情</b>；分区用分隔线 <span style="font-family:Consolas">── 标题 ──</span>；<br>
+      追加式（新完成的行出现在对应区末尾，自动滚到底）；状态符 ⏳ ⏵ ✓ ✗ + 颜色区分。<br>
+      <b>实现更简单</b>：GDI 等宽文本逐行绘制，无卡片布局计算。
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

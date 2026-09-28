@@ -1,0 +1,33 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "MetaHuman Solver",
+  "Description": "Batch MetaHuman facial animation solver — Phase 1: Dark-themed three-tab editor tool window.",
+  "Category": "Editor",
+  "CreatedBy": "WorkBuddy",
+  "CanContainContent": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "MetaHumanSolver",
+      "Type": "Editor",
+      "LoadingPhase": "PostEngineInit"
+    },
+    {
+      "Name": "MetaHumanSolverTakeIngest",
+      "Type": "Editor",
+      "LoadingPhase": "PostEngineInit"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "MetaHuman",
+      "Enabled": true
+    },
+    {
+      "Name": "CaptureManagerApp",
+      "Enabled": true
+    }
+  ]
+}
